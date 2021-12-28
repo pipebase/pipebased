@@ -1,0 +1,6 @@
+[workspace]
+
+members = [
+    "pipebased",
+    "pipebased_common",
+]
