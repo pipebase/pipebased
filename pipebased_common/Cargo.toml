@@ -1,0 +1,14 @@
+[package]
+name = "pipebased_common"
+version = "0.1.0"
+edition = "2021"
+authors = ["Li Yu <li.yu.sh0211@gmail.com>"]
+license = "Apache-2.0"
+repository = "https://github.com/pipebase/pipebased"
+homepage = "https://github.com/pipebase/pipebased"
+documentation = "https://docs.rs/pipebased_common/"
+description = "lib for pipebased components"
+keywords = ["pipebase", "daemon"]
+
+[dependencies]
+

@@ -1,0 +1,21 @@
+[package]
+name = "pipebased"
+version = "0.1.0"
+edition = "2021"
+authors = ["Li Yu <li.yu.sh0211@gmail.com>"]
+license = "Apache-2.0"
+repository = "https://github.com/pipebase/pipebased"
+homepage = "https://github.com/pipebase/pipebased"
+description = "runtime daemon for pipebase application"
+keywords = ["pipebase", "daemon"]
+
+[[bin]]
+name = "piped"
+path = "src/daemon/main.rs"
+
+[[bin]]
+name = "pipe"
+path = "src/cli/main.rs"
+
+[dependencies]
+pipebased_common = { version = "0.1.0", path = "../pipebased_common" }
