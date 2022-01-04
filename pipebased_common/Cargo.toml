@@ -11,4 +11,11 @@ description = "lib for pipebased components"
 keywords = ["pipebase", "daemon"]
 
 [dependencies]
-
+dbus = { version = "0.9.5" }
+pipebuilder_common = { version = "0.2.0" }
+rand = "0.8.4"
+serde = { version = "1.0", features = ["derive"] }
+thiserror = "1.0.29"
+tracing = "0.1"
+tracing-subscriber = "0.2"
+systemd_client = "0.1.6"
