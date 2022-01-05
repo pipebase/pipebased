@@ -1,5 +1,5 @@
 use crate::{
-    chown, create_directory, link, path_error, pipe_error, PathBuilder, Result, DIRECTORY_CATALOGS,
+    chown, create_directory, link, path_error, pipe_error, PathBuilder, Result, PATH_CATALOGS,
     SYSTEMD_DEFAULT_DESCRIPTION, SYSTEMD_DEFAULT_GROUP, SYSTEMD_DEFAULT_START_UNIT_MODE,
     SYSTEMD_DEFAULT_STOP_UNIT_MODE, SYSTEMD_DEFAULT_USER,
 };
@@ -156,6 +156,12 @@ pub struct PipeDescriptor<'a> {
     pub group: &'a str,
     pub app_path: &'a Path,
     pub catalogs_path: &'a Path,
+}
+
+impl<'a> PartialEq for PipeDescriptor<'a> {
+    fn eq(&self, other: &Self) -> bool {
+        self.id == other.id
+    }
 }
 
 pub struct PipeDescriptorBuilder<'a> {
@@ -327,7 +333,7 @@ impl<'a> PipeManager<'a> {
     fn link_catalogs(working_directory: &Path, catalogs_path: &Path) -> Result<()> {
         let catalogs_link_path = PathBuilder::default()
             .push(working_directory)
-            .push(DIRECTORY_CATALOGS)
+            .push(PATH_CATALOGS)
             .build();
         link(catalogs_path, catalogs_link_path.as_path(), true)
     }

@@ -1,4 +1,4 @@
-use crate::PipeOperation;
+use crate::{PipeOperation, ResourceType};
 use std::{
     ffi::OsStr,
     fmt::{Debug, Display},
@@ -20,6 +20,12 @@ pub type Result<T> = result::Result<T, Error>;
 
 #[derive(Debug, Error)]
 pub enum ErrorImpl {
+    #[error("chmod error, permission: {permission:?}, path: {path:?}, detail: {message:?}")]
+    Chmod {
+        permission: String,
+        path: String,
+        message: String,
+    },
     #[error("chown error, user: {user:?}, group: {group:?}, path: {path:?}, detail: {message:?}")]
     Chown {
         user: String,
@@ -42,10 +48,17 @@ pub enum ErrorImpl {
         operation: PipeOperation,
         message: String,
     },
+    #[error("pull repository error, resource: {resource:?}, detail: {error:?}")]
+    Resource {
+        resource: ResourceType,
+        error: pipebuilder_common::Error,
+    },
     #[error("systemd client error, detail: {0:?}")]
     Systemd(#[from] systemd_client::Error),
     #[error("utf8 error, detail: {0:?}")]
     Utf8(#[from] std::string::FromUtf8Error),
+    #[error("yaml error, detail: {0:?}")]
+    Yaml(#[from] serde_yaml::Error),
 }
 
 impl From<std::io::Error> for Error {
@@ -70,6 +83,12 @@ impl From<dbus::Error> for Error {
     fn from(origin: dbus::Error) -> Self {
         let error: systemd_client::Error = origin.into();
         Error(Box::new(ErrorImpl::Systemd(error)))
+    }
+}
+
+impl From<serde_yaml::Error> for Error {
+    fn from(origin: serde_yaml::Error) -> Self {
+        Error(Box::new(ErrorImpl::Yaml(origin)))
     }
 }
 
@@ -99,10 +118,28 @@ where
     }))
 }
 
+pub fn chmod_error<P, M>(permission: String, path: P, message: M) -> Error
+where
+    P: AsRef<OsStr>,
+    M: Display,
+{
+    let path = Path::new(&path).to_str().unwrap_or_default().to_owned();
+    let message = format!("{}", message);
+    Error(Box::new(ErrorImpl::Chmod {
+        permission,
+        path,
+        message,
+    }))
+}
+
 pub fn path_error(operation: String, message: String) -> Error {
     Error(Box::new(ErrorImpl::Path { operation, message }))
 }
 
 pub fn pipe_error(operation: PipeOperation, message: String) -> Error {
     Error(Box::new(ErrorImpl::Pipe { operation, message }))
+}
+
+pub fn resource_error(resource: ResourceType, error: pipebuilder_common::Error) -> Error {
+    Error(Box::new(ErrorImpl::Resource { resource, error }))
 }
