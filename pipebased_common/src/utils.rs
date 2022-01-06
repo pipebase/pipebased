@@ -30,6 +30,14 @@ where
     Ok(())
 }
 
+pub fn remove_directory<P>(path: P) -> Result<()>
+where
+    P: AsRef<Path>,
+{
+    fs::remove_dir_all(path)?;
+    Ok(())
+}
+
 pub fn create_recursive_directory_with_permission<P>(paths: &[P], permission: &str) -> Result<()>
 where
     P: AsRef<Path>,

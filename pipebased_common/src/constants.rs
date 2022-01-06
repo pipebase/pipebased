@@ -6,6 +6,8 @@ pub(crate) const PATH_APP_REGISTER: &str = "app.reg";
 pub(crate) const PATH_CATALOGS: &str = "catalogs";
 pub(crate) const PATH_CATALOGS_REGISTER: &str = "catalogs.reg";
 pub(crate) const PATH_CATALOGS_LOCK: &str = "catalogs.lock";
+pub(crate) const PATH_PIPE_LOCK: &str = "pipe.lock";
+pub(crate) const PATH_PIPE_REGISTER: &str = "pipe.reg";
 pub(crate) const SYSTEMD_DEFAULT_USER: &str = "pipebase";
 pub(crate) const SYSTEMD_DEFAULT_GROUP: &str = "pipebase";
 // https://www.freedesktop.org/wiki/Software/systemd/dbus/
