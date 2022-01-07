@@ -24,6 +24,7 @@ pub enum PipeOperation {
     Deregister,
     Register,
     Start,
+    Status,
     Stop,
     Delete,
 }
@@ -35,6 +36,7 @@ impl Display for PipeOperation {
             PipeOperation::Deregister => "deregister",
             PipeOperation::Register => "register",
             PipeOperation::Start => "start",
+            PipeOperation::Status => "status",
             PipeOperation::Stop => "stop",
             PipeOperation::Delete => "delete",
         };
@@ -171,6 +173,12 @@ impl<'a> PartialEq for PipeDescriptor<'a> {
     }
 }
 
+impl<'a> PipeDescriptor<'a> {
+    pub fn builder() -> PipeDescriptorBuilder<'a> {
+        PipeDescriptorBuilder::default()
+    }
+}
+
 pub struct PipeDescriptorBuilder<'a> {
     pub id: Option<&'a str>,
     pub description: &'a str,
@@ -294,6 +302,15 @@ impl<'a> PipeManager<'a> {
     }
 
     pub(crate) fn start(&self, id: &str) -> Result<()> {
+        let mut lock_file = self.open_pipe_lock()?;
+        lock_file.lock()?;
+        let registered = self.do_check_pipe_registered(id)?;
+        if !registered {
+            return Err(pipe_error(
+                PipeOperation::Start,
+                format!("pipe '{}' not registered", id),
+            ));
+        }
         let unit_name = PipeUnitNameBuilder::default().id(id).build();
         let client = build_blocking_client(SystemdObjectType::Manager)?;
         let _ = client.start_unit(unit_name.as_str(), SYSTEMD_DEFAULT_START_UNIT_MODE)?;
@@ -301,6 +318,15 @@ impl<'a> PipeManager<'a> {
     }
 
     pub(crate) fn stop(&self, id: &str) -> Result<()> {
+        let mut lock_file = self.open_pipe_lock()?;
+        lock_file.lock()?;
+        let registered = self.do_check_pipe_registered(id)?;
+        if !registered {
+            return Err(pipe_error(
+                PipeOperation::Stop,
+                format!("pipe '{}' not registered", id),
+            ));
+        }
         let unit_name = PipeUnitNameBuilder::default().id(id).build();
         let client = build_blocking_client(SystemdObjectType::Manager)?;
         let _ = client.stop_unit(unit_name.as_str(), SYSTEMD_DEFAULT_STOP_UNIT_MODE)?;
@@ -308,6 +334,15 @@ impl<'a> PipeManager<'a> {
     }
 
     pub(crate) fn status(&self, id: &str) -> Result<PipeState> {
+        let mut lock_file = self.open_pipe_lock()?;
+        lock_file.lock()?;
+        let registered = self.do_check_pipe_registered(id)?;
+        if !registered {
+            return Err(pipe_error(
+                PipeOperation::Status,
+                format!("pipe '{}' not registered", id),
+            ));
+        }
         let unit_name = PipeUnitNameBuilder::default().id(id).build();
         let unit_path = Self::do_get_unit(unit_name.as_str())?;
         let unit_props = Self::do_get_unit_properties(unit_path)?;
