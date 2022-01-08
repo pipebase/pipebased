@@ -53,6 +53,60 @@ impl Display for AppDescriptor {
     }
 }
 
+impl AppDescriptor {
+    pub fn builder() -> AppDescriptorBuilder {
+        AppDescriptorBuilder::default()
+    }
+}
+
+pub struct AppDescriptorBuilder {
+    pub namespace: Option<String>,
+    pub id: Option<String>,
+    pub version: Option<u64>,
+}
+
+impl AppDescriptorBuilder {
+    pub fn new() -> Self {
+        AppDescriptorBuilder {
+            namespace: None,
+            id: None,
+            version: None,
+        }
+    }
+
+    pub fn namespace(mut self, namespace: String) -> Self {
+        self.namespace = Some(namespace);
+        self
+    }
+
+    pub fn id(mut self, id: String) -> Self {
+        self.id = Some(id);
+        self
+    }
+
+    pub fn version(mut self, version: u64) -> Self {
+        self.version = Some(version);
+        self
+    }
+
+    pub fn build(self) -> AppDescriptor {
+        let namespace = self.namespace.expect("namespace undefined");
+        let id = self.id.expect("id undefined");
+        let version = self.version.expect("version undefined");
+        AppDescriptor {
+            namespace,
+            id,
+            version,
+        }
+    }
+}
+
+impl Default for AppDescriptorBuilder {
+    fn default() -> Self {
+        AppDescriptorBuilder::new()
+    }
+}
+
 #[derive(Clone, Deserialize, Serialize)]
 pub struct CatalogsDescriptor {
     pub namespace: String,
@@ -73,6 +127,60 @@ impl Display for CatalogsDescriptor {
             "(namespace = {}, id = {}, version = {})",
             self.namespace, self.id, self.version
         )
+    }
+}
+
+impl CatalogsDescriptor {
+    pub fn builder() -> CatalogsDescriptorBuilder {
+        CatalogsDescriptorBuilder::default()
+    }
+}
+
+pub struct CatalogsDescriptorBuilder {
+    pub namespace: Option<String>,
+    pub id: Option<String>,
+    pub version: Option<u64>,
+}
+
+impl CatalogsDescriptorBuilder {
+    pub fn new() -> Self {
+        CatalogsDescriptorBuilder {
+            namespace: None,
+            id: None,
+            version: None,
+        }
+    }
+
+    pub fn namespace(mut self, namespace: String) -> Self {
+        self.namespace = Some(namespace);
+        self
+    }
+
+    pub fn id(mut self, id: String) -> Self {
+        self.id = Some(id);
+        self
+    }
+
+    pub fn version(mut self, version: u64) -> Self {
+        self.version = Some(version);
+        self
+    }
+
+    pub fn build(self) -> CatalogsDescriptor {
+        let namespace = self.namespace.expect("namespace undefined");
+        let id = self.id.expect("id undefined");
+        let version = self.version.expect("version undefined");
+        CatalogsDescriptor {
+            namespace,
+            id,
+            version,
+        }
+    }
+}
+
+impl Default for CatalogsDescriptorBuilder {
+    fn default() -> Self {
+        CatalogsDescriptorBuilder::new()
     }
 }
 
