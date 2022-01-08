@@ -1,6 +1,7 @@
 mod constants;
 mod daemon;
 mod errors;
+pub mod grpc;
 mod pipe;
 mod repository;
 mod utils;

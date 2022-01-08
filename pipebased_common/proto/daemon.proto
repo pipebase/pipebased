@@ -1,0 +1,134 @@
+syntax = "proto3";
+package daemon;
+
+message AppDescriptor {
+    // project namespace
+    string namespace = 1;
+    // project id
+    string id = 2;
+    // project build version
+    uint64 version = 3;
+}
+
+message ListAppRequest {}
+
+message ListAppResponse {
+    repeated AppDescriptor apps = 1;
+}
+
+message CatalogsDescriptor {
+    // project namespace
+    string namespace = 1;
+    // project id
+    string id = 2;
+    // project build version
+    uint64 version = 3;
+}
+
+message ListCatalogsRequest {}
+
+message ListCatalogsResponse {
+    repeated CatalogsDescriptor catalogs = 1;
+}
+
+message PullAppRequest {
+    // project namespace
+    string namespace = 1;
+    // project id
+    string id = 2;
+    // project build version
+    uint64 version = 3;
+}
+
+message PullAppResponse {}
+
+message PullCatalogsRequest {
+    // project namespace
+    string namespace = 1;
+    // project id
+    string id = 2;
+    // project build version
+    uint64 version = 3;
+}
+
+message PullCatalogsResponse {}
+
+message RemoveAppRequest {
+    // project namespace
+    string namespace = 1;
+    // project id
+    string id = 2;
+    // project build version
+    uint64 version = 3;
+}
+
+message RemoveAppResponse {}
+
+message RemoveCatalogsRequest {
+    // project namespace
+    string namespace = 1;
+    // project id
+    string id = 2;
+    // project build version
+    uint64 version = 3;
+}
+
+message RemoveCatalogsResponse {}
+
+message CreatePipeRequest {
+    string id = 1;
+    string description = 2;
+    optional string user = 3;
+    optional string group = 4;
+    AppDescriptor app = 5;
+    CatalogsDescriptor catalogs = 6;
+}
+
+message CreatePipeResponse {}
+
+message StartPipeRequest {
+    string id = 1;
+}
+
+message StartPipeResponse {}
+
+message StopPipeRequest {
+    string id = 1;
+}
+
+message StopPipeResponse {}
+
+message DeletePipeRequest {
+    string id = 1;
+}
+
+message DeletePipeResponse {}
+
+message ListPipeRequest {}
+
+message PipeState {
+    string id = 1;
+    string load_state = 2;
+    string active_state = 3;
+    string sub_state = 4;
+}
+
+message ListPipeResponse {
+    repeated PipeState pipes = 1;
+}
+
+service Daemon {
+    // repository operations
+    rpc ListApp(ListAppRequest) returns (ListAppResponse) {}
+    rpc ListCatalogs(ListCatalogsRequest) returns (ListCatalogsResponse) {}
+    rpc PullApp(PullAppRequest) returns (PullAppResponse) {}
+    rpc PullCatalogs(PullCatalogsRequest) returns (PullCatalogsResponse) {}
+    rpc RemoveApp(RemoveAppRequest) returns (RemoveAppResponse) {}
+    rpc RemoveCatalogs(RemoveCatalogsRequest) returns (RemoveCatalogsResponse) {}
+    // pipe operations
+    rpc CreatePipe(CreatePipeRequest) returns (CreatePipeResponse) {}
+    rpc StartPipe(StartPipeRequest) returns (StartPipeResponse) {}
+    rpc StopPipe(StopPipeRequest) returns (StopPipeResponse) {}
+    rpc DeletePipe(DeletePipeRequest) returns (DeletePipeResponse) {}
+    rpc ListPipe(ListPipeRequest) returns (ListPipeResponse) {}
+}

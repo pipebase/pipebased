@@ -55,6 +55,8 @@ pub enum ErrorImpl {
     },
     #[error("systemd client error, detail: {0:?}")]
     Systemd(#[from] systemd_client::Error),
+    #[error("tonic transport error, detail: {0:?}")]
+    TonicTransport(#[from] tonic::transport::Error),
     #[error("utf8 error, detail: {0:?}")]
     Utf8(#[from] std::string::FromUtf8Error),
     #[error("yaml error, detail: {0:?}")]
@@ -89,6 +91,12 @@ impl From<dbus::Error> for Error {
 impl From<serde_yaml::Error> for Error {
     fn from(origin: serde_yaml::Error) -> Self {
         Error(Box::new(ErrorImpl::Yaml(origin)))
+    }
+}
+
+impl From<tonic::transport::Error> for Error {
+    fn from(err: tonic::transport::Error) -> Self {
+        Error(Box::new(ErrorImpl::TonicTransport(err)))
     }
 }
 
