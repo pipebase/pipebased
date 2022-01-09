@@ -1,7 +1,7 @@
 use crate::{
-    chmod, create_recursive_directory_with_permission, open_lock_file, read_yml, remove_directory,
-    resource_error, write_file, write_yml, PathBuilder, Result, PATH_APP, PATH_APP_LOCK,
-    PATH_APP_REGISTER, PATH_CATALOGS, PATH_CATALOGS_LOCK, PATH_CATALOGS_REGISTER,
+    chmod, create_recursive_directory_with_permission, grpc, open_lock_file, read_yml,
+    remove_directory, resource_error, write_file, write_yml, PathBuilder, Result, PATH_APP,
+    PATH_APP_LOCK, PATH_APP_REGISTER, PATH_CATALOGS, PATH_CATALOGS_LOCK, PATH_CATALOGS_REGISTER,
 };
 use fslock::LockFile;
 use pipebuilder_common::api::{
@@ -107,6 +107,32 @@ impl Default for AppDescriptorBuilder {
     }
 }
 
+impl From<AppDescriptor> for grpc::daemon::AppDescriptor {
+    fn from(origin: AppDescriptor) -> Self {
+        let namespace = origin.namespace;
+        let id = origin.id;
+        let version = origin.version;
+        grpc::daemon::AppDescriptor {
+            namespace,
+            id,
+            version,
+        }
+    }
+}
+
+impl From<grpc::daemon::AppDescriptor> for AppDescriptor {
+    fn from(origin: grpc::daemon::AppDescriptor) -> Self {
+        let namespace = origin.namespace;
+        let id = origin.id;
+        let version = origin.version;
+        AppDescriptor {
+            namespace,
+            id,
+            version,
+        }
+    }
+}
+
 #[derive(Clone, Deserialize, Serialize)]
 pub struct CatalogsDescriptor {
     pub namespace: String,
@@ -181,6 +207,32 @@ impl CatalogsDescriptorBuilder {
 impl Default for CatalogsDescriptorBuilder {
     fn default() -> Self {
         CatalogsDescriptorBuilder::new()
+    }
+}
+
+impl From<CatalogsDescriptor> for grpc::daemon::CatalogsDescriptor {
+    fn from(origin: CatalogsDescriptor) -> Self {
+        let namespace = origin.namespace;
+        let id = origin.id;
+        let version = origin.version;
+        grpc::daemon::CatalogsDescriptor {
+            namespace,
+            id,
+            version,
+        }
+    }
+}
+
+impl From<grpc::daemon::CatalogsDescriptor> for CatalogsDescriptor {
+    fn from(origin: grpc::daemon::CatalogsDescriptor) -> Self {
+        let namespace = origin.namespace;
+        let id = origin.id;
+        let version = origin.version;
+        CatalogsDescriptor {
+            namespace,
+            id,
+            version,
+        }
     }
 }
 

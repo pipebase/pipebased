@@ -77,7 +77,7 @@ message RemoveCatalogsResponse {}
 
 message CreatePipeRequest {
     string id = 1;
-    string description = 2;
+    optional string description = 2;
     optional string user = 3;
     optional string group = 4;
     AppDescriptor app = 5;

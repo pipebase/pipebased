@@ -96,8 +96,8 @@ pub struct RemoveCatalogsResponse {}
 pub struct CreatePipeRequest {
     #[prost(string, tag = "1")]
     pub id: ::prost::alloc::string::String,
-    #[prost(string, tag = "2")]
-    pub description: ::prost::alloc::string::String,
+    #[prost(string, optional, tag = "2")]
+    pub description: ::core::option::Option<::prost::alloc::string::String>,
     #[prost(string, optional, tag = "3")]
     pub user: ::core::option::Option<::prost::alloc::string::String>,
     #[prost(string, optional, tag = "4")]

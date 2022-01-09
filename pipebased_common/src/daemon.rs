@@ -1,6 +1,6 @@
 use crate::{
-    pipe_error, AppDescriptor, CatalogsDescriptor, PipeDescriptor, PipeManager, PipeOperation,
-    PipeState, RepositoryManager, Result,
+    grpc, pipe_error, AppDescriptor, CatalogsDescriptor, PipeDescriptor, PipeManager,
+    PipeOperation, PipeState, RepositoryManager, Result,
 };
 use std::path::PathBuf;
 
@@ -12,11 +12,94 @@ pub struct Daemon<'a> {
 // composite descriptor include all material to create a new pipe instance
 pub struct Descriptor {
     pub id: String,
-    pub description: String,
+    pub description: Option<String>,
     pub user: Option<String>,
     pub group: Option<String>,
     pub app_descriptor: AppDescriptor,
     pub catalogs_descriptor: CatalogsDescriptor,
+}
+
+impl Descriptor {
+    pub fn builder() -> DescriptorBuilder {
+        DescriptorBuilder::new()
+    }
+}
+
+pub struct DescriptorBuilder {
+    pub id: Option<String>,
+    pub description: Option<String>,
+    pub user: Option<String>,
+    pub group: Option<String>,
+    pub app_descriptor: Option<AppDescriptor>,
+    pub catalogs_descriptor: Option<CatalogsDescriptor>,
+}
+
+impl DescriptorBuilder {
+    pub fn new() -> Self {
+        DescriptorBuilder {
+            id: None,
+            description: None,
+            user: None,
+            group: None,
+            app_descriptor: None,
+            catalogs_descriptor: None,
+        }
+    }
+
+    pub fn id(mut self, id: String) -> Self {
+        self.id = Some(id);
+        self
+    }
+
+    pub fn description(mut self, description: String) -> Self {
+        self.description = Some(description);
+        self
+    }
+
+    pub fn user(mut self, user: String) -> Self {
+        self.user = Some(user);
+        self
+    }
+
+    pub fn group(mut self, group: String) -> Self {
+        self.group = Some(group);
+        self
+    }
+
+    pub fn app_descriptor(mut self, desc: AppDescriptor) -> Self {
+        self.app_descriptor = Some(desc);
+        self
+    }
+
+    pub fn catalogs_descriptor(mut self, desc: CatalogsDescriptor) -> Self {
+        self.catalogs_descriptor = Some(desc);
+        self
+    }
+
+    pub fn build(self) -> Descriptor {
+        let id = self.id.expect("id undefined");
+        let description = self.description;
+        let user = self.user;
+        let group = self.group;
+        let app_descriptor = self.app_descriptor.expect("app descriptor undefined");
+        let catalogs_descriptor = self
+            .catalogs_descriptor
+            .expect("catalogs descriptor undefined");
+        Descriptor {
+            id,
+            description,
+            user,
+            group,
+            app_descriptor,
+            catalogs_descriptor,
+        }
+    }
+}
+
+impl Default for DescriptorBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl<'a> Daemon<'a> {
@@ -77,9 +160,12 @@ impl<'a> Daemon<'a> {
         };
         let builder = PipeDescriptor::builder()
             .id(desc.id.as_str())
-            .description(desc.description.as_str())
             .app_path(app_path.as_path())
             .catalogs_path(catalogs_path.as_path());
+        let builder = match desc.description.as_ref() {
+            Some(description) => builder.description(description.as_str()),
+            None => builder,
+        };
         let builder = match desc.user.as_ref() {
             Some(user) => builder.user(user.as_str()),
             None => builder,

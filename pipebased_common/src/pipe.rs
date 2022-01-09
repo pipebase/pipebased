@@ -1,6 +1,6 @@
 use crate::{
-    chown, create_directory, link, open_lock_file, path_error, pipe_error, read_yml, write_yml,
-    PathBuilder, Result, PATH_CATALOGS, PATH_PIPE_LOCK, PATH_PIPE_REGISTER,
+    chown, create_directory, grpc, link, open_lock_file, path_error, pipe_error, read_yml,
+    write_yml, PathBuilder, Result, PATH_CATALOGS, PATH_PIPE_LOCK, PATH_PIPE_REGISTER,
     SYSTEMD_DEFAULT_DESCRIPTION, SYSTEMD_DEFAULT_GROUP, SYSTEMD_DEFAULT_START_UNIT_MODE,
     SYSTEMD_DEFAULT_STOP_UNIT_MODE, SYSTEMD_DEFAULT_USER,
 };
@@ -68,6 +68,20 @@ impl From<UnitLoadStateType> for PipeLoadStateType {
     }
 }
 
+impl ToString for PipeLoadStateType {
+    fn to_string(&self) -> String {
+        match self {
+            PipeLoadStateType::Stub => String::from("stub"),
+            PipeLoadStateType::Loaded => String::from("loaded"),
+            PipeLoadStateType::NotFound => String::from("not-found"),
+            PipeLoadStateType::Error => String::from("error"),
+            PipeLoadStateType::Merged => String::from("merged"),
+            PipeLoadStateType::Masked => String::from("masked"),
+            PipeLoadStateType::Other(other) => other.clone(),
+        }
+    }
+}
+
 pub enum PipeActiveStateType {
     Active,
     Reloading,
@@ -88,6 +102,20 @@ impl From<UnitActiveStateType> for PipeActiveStateType {
             UnitActiveStateType::Activating => PipeActiveStateType::Activating,
             UnitActiveStateType::Deactivating => PipeActiveStateType::Deactivating,
             UnitActiveStateType::Other(other) => PipeActiveStateType::Other(other),
+        }
+    }
+}
+
+impl ToString for PipeActiveStateType {
+    fn to_string(&self) -> String {
+        match self {
+            PipeActiveStateType::Active => String::from("active"),
+            PipeActiveStateType::Reloading => String::from("reloading"),
+            PipeActiveStateType::Inactive => String::from("inactive"),
+            PipeActiveStateType::Failed => String::from("failed"),
+            PipeActiveStateType::Activating => String::from("activating"),
+            PipeActiveStateType::Deactivating => String::from("deactivating"),
+            PipeActiveStateType::Other(other) => other.clone(),
         }
     }
 }
@@ -138,6 +166,31 @@ impl From<UnitSubStateType> for PipeSubStateType {
     }
 }
 
+impl ToString for PipeSubStateType {
+    fn to_string(&self) -> String {
+        match self {
+            PipeSubStateType::AutoRestart => String::from("auto-restart"),
+            PipeSubStateType::Dead => String::from("dead"),
+            PipeSubStateType::Exited => String::from("exited"),
+            PipeSubStateType::Failed => String::from("failed"),
+            PipeSubStateType::FinalSigterm => String::from("final-sigterm"),
+            PipeSubStateType::FinalSigkill => String::from("final-sigkill"),
+            PipeSubStateType::Reload => String::from("reload"),
+            PipeSubStateType::Running => String::from("running"),
+            PipeSubStateType::Start => String::from("start"),
+            PipeSubStateType::StartPre => String::from("start-pre"),
+            PipeSubStateType::StartPost => String::from("start-post"),
+            PipeSubStateType::Stop => String::from("stop"),
+            PipeSubStateType::StopPost => String::from("stop-post"),
+            PipeSubStateType::StopSigabrt => String::from("stop-sigabrt"),
+            PipeSubStateType::StopSigterm => String::from("stop-sigterm"),
+            PipeSubStateType::StopSigkill => String::from("stop-sigkill"),
+            PipeSubStateType::Waiting => String::from("waiting"),
+            PipeSubStateType::Other(other) => other.clone(),
+        }
+    }
+}
+
 pub struct PipeState {
     // pipe id - systemd unit name
     pub id: String,
@@ -153,6 +206,21 @@ impl PipeState {
 
     pub fn is_dead(&self) -> bool {
         matches!(self.sub_state, PipeSubStateType::Dead)
+    }
+}
+
+impl From<PipeState> for grpc::daemon::PipeState {
+    fn from(origin: PipeState) -> Self {
+        let id = origin.id;
+        let load_state = origin.load_state.to_string();
+        let active_state = origin.active_state.to_string();
+        let sub_state = origin.sub_state.to_string();
+        grpc::daemon::PipeState {
+            id,
+            load_state,
+            active_state,
+            sub_state,
+        }
     }
 }
 
