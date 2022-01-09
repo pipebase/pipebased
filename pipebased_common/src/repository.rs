@@ -236,13 +236,13 @@ impl From<grpc::daemon::CatalogsDescriptor> for CatalogsDescriptor {
     }
 }
 
-pub struct RepositoryManager<'a> {
-    app_directory: &'a Path,
-    catalogs_directory: &'a Path,
+pub struct RepositoryManager {
+    app_directory: PathBuf,
+    catalogs_directory: PathBuf,
     client: BuilderClient,
 }
 
-impl<'a> RepositoryManager<'a> {
+impl RepositoryManager {
     pub(crate) async fn pull_app(&self, desc: &AppDescriptor) -> Result<()> {
         let buffer = self.do_pull_app(desc).await?;
         let mut lock_file = self.open_app_lock()?;
@@ -368,7 +368,7 @@ impl<'a> RepositoryManager<'a> {
         let version = desc.version.to_string();
         create_recursive_directory_with_permission(
             &[
-                self.app_directory,
+                self.app_directory.as_path(),
                 Path::new(desc.namespace.as_str()),
                 Path::new(desc.id.as_str()),
                 Path::new(version.as_str()),
@@ -376,7 +376,7 @@ impl<'a> RepositoryManager<'a> {
             "+r",
         )?;
         let path = PathBuilder::default()
-            .push(self.app_directory)
+            .push(self.app_directory.as_path())
             .push(desc.namespace.as_str())
             .push(desc.id.as_str())
             .push(version.as_str())
@@ -390,7 +390,7 @@ impl<'a> RepositoryManager<'a> {
         let version = desc.version.to_string();
         create_recursive_directory_with_permission(
             &[
-                self.catalogs_directory,
+                self.catalogs_directory.as_path(),
                 Path::new(desc.namespace.as_str()),
                 Path::new(desc.id.as_str()),
                 Path::new(version.as_str()),
@@ -398,7 +398,7 @@ impl<'a> RepositoryManager<'a> {
             "+r",
         )?;
         let path = PathBuilder::default()
-            .push(self.app_directory)
+            .push(self.app_directory.as_path())
             .push(desc.namespace.as_str())
             .push(desc.id.as_str())
             .push(version.as_str())
@@ -412,7 +412,7 @@ impl<'a> RepositoryManager<'a> {
 
     fn do_remove_catalogs(&self, desc: &CatalogsDescriptor) -> Result<()> {
         let path = PathBuilder::default()
-            .push(self.catalogs_directory)
+            .push(self.catalogs_directory.as_path())
             .push(desc.namespace.as_str())
             .push(desc.id.as_str())
             .push(desc.version.to_string())
@@ -422,7 +422,7 @@ impl<'a> RepositoryManager<'a> {
 
     fn do_remove_app(&self, desc: &AppDescriptor) -> Result<()> {
         let path = PathBuilder::default()
-            .push(self.app_directory)
+            .push(self.app_directory.as_path())
             .push(desc.namespace.as_str())
             .push(desc.id.as_str())
             .push(desc.version.to_string())
@@ -432,7 +432,7 @@ impl<'a> RepositoryManager<'a> {
 
     fn open_app_lock(&self) -> Result<LockFile> {
         let lock_file_path = PathBuilder::default()
-            .push(self.app_directory)
+            .push(self.app_directory.as_path())
             .push(PATH_APP_LOCK)
             .build();
         open_lock_file(lock_file_path.as_path())
@@ -440,7 +440,7 @@ impl<'a> RepositoryManager<'a> {
 
     fn open_catalogs_lock(&self) -> Result<LockFile> {
         let lock_file_path = PathBuilder::default()
-            .push(self.catalogs_directory)
+            .push(self.catalogs_directory.as_path())
             .push(PATH_CATALOGS_LOCK)
             .build();
         open_lock_file(lock_file_path.as_path())
@@ -449,7 +449,7 @@ impl<'a> RepositoryManager<'a> {
     // read app register
     fn do_read_app_register(&self) -> Result<Vec<AppDescriptor>> {
         let register_file_path = PathBuilder::default()
-            .push(self.app_directory)
+            .push(self.app_directory.as_path())
             .push(PATH_APP_REGISTER)
             .build();
         match register_file_path.as_path().exists() {
@@ -460,7 +460,7 @@ impl<'a> RepositoryManager<'a> {
 
     fn do_write_app_register(&self, descs: Vec<AppDescriptor>) -> Result<()> {
         let register_file_path = PathBuilder::default()
-            .push(self.app_directory)
+            .push(self.app_directory.as_path())
             .push(PATH_APP_REGISTER)
             .build();
         write_yml(register_file_path.as_path(), &descs)
@@ -492,7 +492,7 @@ impl<'a> RepositoryManager<'a> {
     // read catalogs register
     fn do_read_catalogs_register(&self) -> Result<Vec<CatalogsDescriptor>> {
         let register_file_path = PathBuilder::default()
-            .push(self.catalogs_directory)
+            .push(self.catalogs_directory.as_path())
             .push(PATH_CATALOGS_REGISTER)
             .build();
         match register_file_path.as_path().exists() {
@@ -503,7 +503,7 @@ impl<'a> RepositoryManager<'a> {
 
     fn do_write_catalogs_register(&self, descs: Vec<CatalogsDescriptor>) -> Result<()> {
         let register_file_path = PathBuilder::default()
-            .push(self.catalogs_directory)
+            .push(self.catalogs_directory.as_path())
             .push(PATH_CATALOGS_REGISTER)
             .build();
         write_yml(register_file_path.as_path(), &descs)
@@ -547,7 +547,7 @@ impl<'a> RepositoryManager<'a> {
         }
         let exists_in_register = i < apps.len();
         let path = PathBuilder::default()
-            .push(self.app_directory)
+            .push(self.app_directory.as_path())
             .push(desc.id.as_str())
             .push(desc.version.to_string())
             .push(PATH_APP)
@@ -581,7 +581,7 @@ impl<'a> RepositoryManager<'a> {
         }
         let exists_in_register = i < catalogs.len();
         let path = PathBuilder::default()
-            .push(self.catalogs_directory)
+            .push(self.catalogs_directory.as_path())
             .push(desc.id.as_str())
             .push(desc.version.to_string())
             .push(PATH_CATALOGS)

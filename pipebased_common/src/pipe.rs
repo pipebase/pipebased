@@ -335,11 +335,11 @@ impl<'a> PipeUnitNameBuilder<'a> {
     }
 }
 
-pub struct PipeManager<'a> {
-    pub workspace: &'a Path,
+pub struct PipeManager {
+    pub workspace: PathBuf,
 }
 
-impl<'a> PipeManager<'a> {
+impl PipeManager {
     // create service configuration file and add pipe id into register
     pub(crate) fn create(&self, desc: PipeDescriptor<'_>) -> Result<()> {
         let mut lock_file = self.open_pipe_lock()?;
@@ -457,7 +457,10 @@ impl<'a> PipeManager<'a> {
     }
 
     fn do_create_working_directory(&self, id: &str) -> Result<PathBuf> {
-        let working_directory = PathBuilder::default().push(self.workspace).push(id).build();
+        let working_directory = PathBuilder::default()
+            .push(self.workspace.as_path())
+            .push(id)
+            .build();
         create_directory(working_directory.as_path())?;
         Ok(working_directory)
     }
@@ -537,7 +540,7 @@ impl<'a> PipeManager<'a> {
     // read pipe register
     fn do_read_pipe_register(&self) -> Result<Vec<String>> {
         let register_file_path = PathBuilder::default()
-            .push(self.workspace)
+            .push(self.workspace.as_path())
             .push(PATH_PIPE_REGISTER)
             .build();
         match register_file_path.as_path().exists() {
@@ -549,7 +552,7 @@ impl<'a> PipeManager<'a> {
     // write pipe register
     fn do_write_pipe_register(&self, ids: Vec<String>) -> Result<()> {
         let register_file_path = PathBuilder::default()
-            .push(self.workspace)
+            .push(self.workspace.as_path())
             .push(PATH_PIPE_REGISTER)
             .build();
         write_yml(register_file_path.as_path(), &ids)
@@ -594,7 +597,7 @@ impl<'a> PipeManager<'a> {
 
     fn open_pipe_lock(&self) -> Result<LockFile> {
         let lock_file_path = PathBuilder::default()
-            .push(self.workspace)
+            .push(self.workspace.as_path())
             .push(PATH_PIPE_LOCK)
             .build();
         open_lock_file(lock_file_path.as_path())

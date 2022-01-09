@@ -4,9 +4,9 @@ use crate::{
 };
 use std::path::PathBuf;
 
-pub struct Daemon<'a> {
-    repository_manager: RepositoryManager<'a>,
-    pipe_manager: PipeManager<'a>,
+pub struct Daemon {
+    repository_manager: RepositoryManager,
+    pipe_manager: PipeManager,
 }
 
 // composite descriptor include all material to create a new pipe instance
@@ -102,7 +102,7 @@ impl Default for DescriptorBuilder {
     }
 }
 
-impl<'a> Daemon<'a> {
+impl Daemon {
     // repository operations
     fn check_app_registered(&self, desc: &AppDescriptor) -> Result<Option<PathBuf>> {
         self.repository_manager.check_app_registered(desc)
@@ -208,3 +208,14 @@ impl<'a> Daemon<'a> {
         Ok(pipe_states)
     }
 }
+
+pub struct DaemonService {
+    daemon: Daemon,
+}
+
+/*
+#[tonic::async_trait]
+impl grpc::daemon::daemon_server::Daemon for DaemonService {
+
+}
+*/
