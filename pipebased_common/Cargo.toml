@@ -13,7 +13,7 @@ keywords = ["pipebase", "daemon"]
 [dependencies]
 dbus = { version = "0.9.5" }
 fslock = "0.2.0"
-pipebuilder_common = { version = "0.2.1" }
+pipebuilder_common = { version = "0.2.2" }
 prost = "0.9"
 prost-types = "0.9"
 rand = "0.8.4"
@@ -23,7 +23,7 @@ thiserror = "1.0.29"
 tonic = "0.6"
 tracing = "0.1"
 tracing-subscriber = "0.2"
-systemd_client = "0.1.6"
+systemd_client = "0.1.7"
 
 [build-dependencies]
 prost-build = "0.9"
