@@ -14,3 +14,9 @@ pub(crate) const SYSTEMD_DEFAULT_GROUP: &str = "pipebase";
 pub(crate) const SYSTEMD_DEFAULT_START_UNIT_MODE: &str = "replace";
 pub(crate) const SYSTEMD_DEFAULT_STOP_UNIT_MODE: &str = "replace";
 pub(crate) const SYSTEMD_DEFAULT_DESCRIPTION: &str = "a pipebase application";
+// logging
+pub(crate) const FORMATTER_FULL: &str = "full";
+pub(crate) const FORMATTER_PRETTY: &str = "pretty";
+pub(crate) const FORMATTER_JSON: &str = "json";
+// env
+pub(crate) const ENV_FORMATTER: &str = "PIPEBASED_LOG_FORMATTER";

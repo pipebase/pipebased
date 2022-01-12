@@ -1,4 +1,7 @@
-use crate::{chmod_error, chown_error, link_error, Result, CHARSET, ID_LEN};
+use crate::{
+    chmod_error, chown_error, link_error, Result, CHARSET, ENV_FORMATTER, FORMATTER_FULL,
+    FORMATTER_JSON, FORMATTER_PRETTY, ID_LEN,
+};
 use fslock::{LockFile, ToOsStr};
 use rand::Rng;
 use serde::{de::DeserializeOwned, Serialize};
@@ -218,5 +221,28 @@ impl PathBuilder {
         PathBuilder {
             buffer: path.to_path_buf(),
         }
+    }
+}
+
+// logging
+fn init_with_full_formatter() {
+    tracing_subscriber::fmt().init()
+}
+
+fn init_with_pretty_formatter() {
+    tracing_subscriber::fmt().pretty().init()
+}
+
+fn init_with_json_formatter() {
+    tracing_subscriber::fmt().json().flatten_event(true).init()
+}
+
+pub fn init_tracing_subscriber() {
+    let formatter = std::env::var(ENV_FORMATTER).unwrap_or_else(|_| String::from(FORMATTER_FULL));
+    match formatter.as_str() {
+        FORMATTER_FULL => init_with_full_formatter(),
+        FORMATTER_PRETTY => init_with_pretty_formatter(),
+        FORMATTER_JSON => init_with_json_formatter(),
+        _ => init_with_full_formatter(),
     }
 }
