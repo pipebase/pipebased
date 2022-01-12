@@ -1,12 +1,61 @@
 use crate::{
     pipe_error, AppDescriptor, CatalogsDescriptor, EnvironmentVariable, PipeDescriptor,
-    PipeManager, PipeOperation, PipeState, RepositoryManager, Result,
+    PipeManager, PipeManagerConfig, PipeOperation, PipeState, RepositoryManager,
+    RepositoryManagerConfig, Result,
 };
+use serde::Deserialize;
 use std::path::PathBuf;
+
+#[derive(Deserialize)]
+pub struct DaemonConfig {
+    pub repository: RepositoryManagerConfig,
+    pub pipe: PipeManagerConfig,
+}
 
 pub struct Daemon {
     repository_manager: RepositoryManager,
     pipe_manager: PipeManager,
+}
+
+pub struct DaemonBuilder {
+    repository_manager: Option<RepositoryManager>,
+    pipe_manager: Option<PipeManager>,
+}
+
+impl Default for DaemonBuilder {
+    fn default() -> Self {
+        DaemonBuilder::new()
+    }
+}
+
+impl DaemonBuilder {
+    pub fn new() -> Self {
+        DaemonBuilder {
+            repository_manager: None,
+            pipe_manager: None,
+        }
+    }
+
+    pub fn repository_manager(mut self, repository_manager: RepositoryManager) -> Self {
+        self.repository_manager = Some(repository_manager);
+        self
+    }
+
+    pub fn pipe_manager(mut self, pipe_manager: PipeManager) -> Self {
+        self.pipe_manager = Some(pipe_manager);
+        self
+    }
+
+    pub fn build(self) -> Daemon {
+        let repository_manager = self
+            .repository_manager
+            .expect("repository manager undefined");
+        let pipe_manager = self.pipe_manager.expect("pipe manager undefined");
+        Daemon {
+            repository_manager,
+            pipe_manager,
+        }
+    }
 }
 
 // composite descriptor include all material to create a new pipe instance
@@ -113,6 +162,10 @@ impl Default for DescriptorBuilder {
 }
 
 impl Daemon {
+    pub fn builder() -> DaemonBuilder {
+        DaemonBuilder::default()
+    }
+
     // repository operations
     fn check_app_registered(&self, desc: &AppDescriptor) -> Result<Option<PathBuf>> {
         self.repository_manager.check_app_registered(desc)

@@ -5,7 +5,7 @@ use crate::{
 };
 use fslock::LockFile;
 use pipebuilder_common::api::{
-    client::ApiClient as BuilderClient,
+    client::{ApiClient as PbClient, ApiClientConfig as PbClientConfig},
     models::{GetAppRequest, GetCatalogsRequest},
 };
 use serde::{Deserialize, Serialize};
@@ -236,13 +236,74 @@ impl From<grpc::daemon::CatalogsDescriptor> for CatalogsDescriptor {
     }
 }
 
+#[derive(Deserialize)]
+pub struct RepositoryManagerConfig {
+    pub app_directory: String,
+    pub catalogs_directory: String,
+    pub pb_client: PbClientConfig,
+}
+
+pub struct RepositoryManagerBuilder {
+    app_directory: Option<PathBuf>,
+    catalogs_directory: Option<PathBuf>,
+    pb_client: Option<PbClient>,
+}
+
+impl Default for RepositoryManagerBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl RepositoryManagerBuilder {
+    pub fn new() -> Self {
+        RepositoryManagerBuilder {
+            app_directory: None,
+            catalogs_directory: None,
+            pb_client: None,
+        }
+    }
+
+    pub fn app_directory(mut self, app_directory: String) -> Self {
+        self.app_directory = Some(PathBuf::from(app_directory));
+        self
+    }
+
+    pub fn catalogs_directory(mut self, catalogs_directory: String) -> Self {
+        self.catalogs_directory = Some(PathBuf::from(catalogs_directory));
+        self
+    }
+
+    pub fn pb_client(mut self, pb_client: PbClient) -> Self {
+        self.pb_client = Some(pb_client);
+        self
+    }
+
+    pub fn build(self) -> RepositoryManager {
+        let app_directory = self.app_directory.expect("app directory undefined");
+        let catalogs_directory = self
+            .catalogs_directory
+            .expect("catalogs directory undefined");
+        let pb_client = self.pb_client.expect("pb client undefined");
+        RepositoryManager {
+            app_directory,
+            catalogs_directory,
+            pb_client,
+        }
+    }
+}
+
 pub struct RepositoryManager {
     app_directory: PathBuf,
     catalogs_directory: PathBuf,
-    client: BuilderClient,
+    pb_client: PbClient,
 }
 
 impl RepositoryManager {
+    pub fn builder() -> RepositoryManagerBuilder {
+        RepositoryManagerBuilder::default()
+    }
+
     pub(crate) async fn pull_app(&self, desc: &AppDescriptor) -> Result<()> {
         let buffer = self.do_pull_app(desc).await?;
         let mut lock_file = self.open_app_lock()?;
@@ -346,7 +407,7 @@ impl RepositoryManager {
             id: desc.id.clone(),
             build_version: desc.version,
         };
-        match self.client.pull_app(&request).await {
+        match self.pb_client.pull_app(&request).await {
             Ok(resp) => Ok(resp.buffer),
             Err(err) => Err(resource_error(ResourceType::App, err)),
         }
@@ -358,7 +419,7 @@ impl RepositoryManager {
             id: desc.id.clone(),
             version: desc.version,
         };
-        match self.client.pull_catalogs(&request).await {
+        match self.pb_client.pull_catalogs(&request).await {
             Ok(resp) => Ok(resp.buffer),
             Err(err) => Err(resource_error(ResourceType::Catalogs, err)),
         }
@@ -404,7 +465,7 @@ impl RepositoryManager {
             .push(version.as_str())
             .push(PATH_CATALOGS)
             .build();
-        match BuilderClient::dump_catalogs(buffer, path.as_path()).await {
+        match PbClient::dump_catalogs(buffer, path.as_path()).await {
             Ok(_) => chmod("+r", path.as_path(), true),
             Err(err) => Err(resource_error(ResourceType::Catalogs, err)),
         }

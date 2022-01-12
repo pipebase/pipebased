@@ -5,6 +5,7 @@ use crate::{
     SYSTEMD_DEFAULT_STOP_UNIT_MODE, SYSTEMD_DEFAULT_USER,
 };
 use fslock::LockFile;
+use serde::Deserialize;
 use std::{
     fmt::Display,
     path::{Path, PathBuf},
@@ -356,11 +357,46 @@ impl<'a> PipeUnitNameBuilder<'a> {
     }
 }
 
+#[derive(Deserialize)]
+pub struct PipeManagerConfig {
+    pub workspace: String,
+}
+
 pub struct PipeManager {
     pub workspace: PathBuf,
 }
 
+pub struct PipeManagerBuilder {
+    workspace: Option<PathBuf>,
+}
+
+impl Default for PipeManagerBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl PipeManagerBuilder {
+    pub fn new() -> Self {
+        PipeManagerBuilder { workspace: None }
+    }
+
+    pub fn workspace(mut self, workspace: String) -> Self {
+        self.workspace = Some(PathBuf::from(workspace));
+        self
+    }
+
+    pub fn build(self) -> PipeManager {
+        let workspace = self.workspace.expect("workspace undefined");
+        PipeManager { workspace }
+    }
+}
+
 impl PipeManager {
+    pub fn builder() -> PipeManagerBuilder {
+        PipeManagerBuilder::default()
+    }
+
     // create service configuration file and add pipe id into register
     pub(crate) fn create(&self, desc: PipeDescriptor<'_>) -> Result<()> {
         let mut lock_file = self.open_pipe_lock()?;
