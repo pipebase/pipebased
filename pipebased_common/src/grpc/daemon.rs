@@ -34,7 +34,7 @@ pub struct ListCatalogsRequest {}
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ListCatalogsResponse {
     #[prost(message, repeated, tag = "1")]
-    pub catalogs: ::prost::alloc::vec::Vec<CatalogsDescriptor>,
+    pub catalogss: ::prost::alloc::vec::Vec<CatalogsDescriptor>,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct PullAppRequest {
@@ -93,6 +93,13 @@ pub struct RemoveCatalogsRequest {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct RemoveCatalogsResponse {}
 #[derive(Clone, PartialEq, ::prost::Message)]
+pub struct EnvironmentVariable {
+    #[prost(string, tag = "1")]
+    pub key: ::prost::alloc::string::String,
+    #[prost(string, tag = "2")]
+    pub value: ::prost::alloc::string::String,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
 pub struct CreatePipeRequest {
     #[prost(string, tag = "1")]
     pub id: ::prost::alloc::string::String,
@@ -102,9 +109,11 @@ pub struct CreatePipeRequest {
     pub user: ::core::option::Option<::prost::alloc::string::String>,
     #[prost(string, optional, tag = "4")]
     pub group: ::core::option::Option<::prost::alloc::string::String>,
-    #[prost(message, optional, tag = "5")]
-    pub app: ::core::option::Option<AppDescriptor>,
+    #[prost(message, repeated, tag = "5")]
+    pub envs: ::prost::alloc::vec::Vec<EnvironmentVariable>,
     #[prost(message, optional, tag = "6")]
+    pub app: ::core::option::Option<AppDescriptor>,
+    #[prost(message, optional, tag = "7")]
     pub catalogs: ::core::option::Option<CatalogsDescriptor>,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]

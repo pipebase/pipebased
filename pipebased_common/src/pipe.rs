@@ -224,13 +224,20 @@ impl From<PipeState> for grpc::daemon::PipeState {
     }
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone)]
+pub struct EnvironmentVariable {
+    pub key: String,
+    pub value: String,
+}
+
+#[derive(Clone)]
 pub struct PipeDescriptor<'a> {
     // pipe id
-    pub id: &'a str,
-    pub description: &'a str,
-    pub user: &'a str,
-    pub group: &'a str,
+    pub id: String,
+    pub description: String,
+    pub user: String,
+    pub group: String,
+    pub envs: Vec<EnvironmentVariable>,
     pub app_path: &'a Path,
     pub catalogs_path: &'a Path,
 }
@@ -248,10 +255,11 @@ impl<'a> PipeDescriptor<'a> {
 }
 
 pub struct PipeDescriptorBuilder<'a> {
-    pub id: Option<&'a str>,
-    pub description: &'a str,
-    pub user: &'a str,
-    pub group: &'a str,
+    pub id: Option<String>,
+    pub description: String,
+    pub user: String,
+    pub group: String,
+    pub envs: Vec<EnvironmentVariable>,
     pub app_path: Option<&'a Path>,
     pub catalogs_path: Option<&'a Path>,
 }
@@ -260,9 +268,10 @@ impl<'a> Default for PipeDescriptorBuilder<'a> {
     fn default() -> Self {
         PipeDescriptorBuilder {
             id: None,
-            description: SYSTEMD_DEFAULT_DESCRIPTION,
-            user: SYSTEMD_DEFAULT_USER,
-            group: SYSTEMD_DEFAULT_GROUP,
+            description: String::from(SYSTEMD_DEFAULT_DESCRIPTION),
+            user: String::from(SYSTEMD_DEFAULT_USER),
+            group: String::from(SYSTEMD_DEFAULT_GROUP),
+            envs: vec![],
             app_path: None,
             catalogs_path: None,
         }
@@ -270,23 +279,33 @@ impl<'a> Default for PipeDescriptorBuilder<'a> {
 }
 
 impl<'a> PipeDescriptorBuilder<'a> {
-    pub fn id(mut self, id: &'a str) -> Self {
+    pub fn id(mut self, id: String) -> Self {
         self.id = Some(id);
         self
     }
 
-    pub fn description(mut self, description: &'a str) -> Self {
+    pub fn description(mut self, description: String) -> Self {
         self.description = description;
         self
     }
 
-    pub fn user(mut self, user: &'a str) -> Self {
+    pub fn user(mut self, user: String) -> Self {
         self.user = user;
         self
     }
 
-    pub fn group(mut self, group: &'a str) -> Self {
+    pub fn group(mut self, group: String) -> Self {
         self.group = group;
+        self
+    }
+
+    pub fn env(mut self, env: EnvironmentVariable) -> Self {
+        self.envs.push(env);
+        self
+    }
+
+    pub fn envs(mut self, envs: Vec<EnvironmentVariable>) -> Self {
+        self.envs.extend(envs);
         self
     }
 
@@ -305,6 +324,7 @@ impl<'a> PipeDescriptorBuilder<'a> {
         let description = self.description;
         let user = self.user;
         let group = self.group;
+        let envs = self.envs;
         let app_path = self.app_path.expect("app path undefined");
         let catalogs_path = self.catalogs_path.expect("catalogs path undefined");
         PipeDescriptor {
@@ -312,6 +332,7 @@ impl<'a> PipeDescriptorBuilder<'a> {
             description,
             user,
             group,
+            envs,
             app_path,
             catalogs_path,
         }
@@ -344,7 +365,7 @@ impl PipeManager {
     pub(crate) fn create(&self, desc: PipeDescriptor<'_>) -> Result<()> {
         let mut lock_file = self.open_pipe_lock()?;
         lock_file.lock()?;
-        let id = desc.id;
+        let id = desc.id.as_str();
         let registered = self.do_check_pipe_registered(id)?;
         if registered {
             return Err(pipe_error(
@@ -363,9 +384,13 @@ impl PipeManager {
         let working_directory = self.do_create_working_directory(id)?;
         // link catalogs
         Self::do_link_catalogs(working_directory.as_path(), desc.catalogs_path)?;
-        Self::do_create_ownership(desc.user, desc.group, working_directory.as_path())?;
+        Self::do_create_ownership(
+            desc.user.as_str(),
+            desc.group.as_str(),
+            working_directory.as_path(),
+        )?;
         // create service configuration file
-        Self::do_create_pipe_configuration_file(desc, working_directory.as_path())?;
+        Self::do_create_pipe_configuration_file(&desc, working_directory.as_path())?;
         self.do_register_pipe(id)
     }
 
@@ -481,10 +506,10 @@ impl PipeManager {
 
     // systemd service configuration file
     fn do_create_pipe_configuration_file(
-        desc: PipeDescriptor<'_>,
+        desc: &PipeDescriptor<'_>,
         working_directory: &Path,
     ) -> Result<()> {
-        let unit = UnitConfiguration::builder().description(desc.description);
+        let unit = UnitConfiguration::builder().description(desc.description.as_str());
         let app_path = match desc.app_path.to_str() {
             Some(app_path) => app_path,
             None => {
@@ -506,13 +531,13 @@ impl PipeManager {
         let service = ServiceConfiguration::builder()
             .exec_start(vec![app_path])
             .working_directory(working_directory)
-            .user(desc.user)
-            .group(desc.group);
+            .user(desc.user.as_str())
+            .group(desc.group.as_str());
         let service_unit = ServiceUnitConfiguration::builder()
             .unit(unit)
             .service(service)
             .build();
-        let unit_name = PipeUnitNameBuilder::default().id(desc.id).build();
+        let unit_name = PipeUnitNameBuilder::default().id(desc.id.as_str()).build();
         let buffer = format!("{}", service_unit);
         create_unit_configuration_file(unit_name.as_str(), buffer.as_bytes())?;
         Ok(())

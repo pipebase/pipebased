@@ -1,6 +1,6 @@
 use crate::{
-    grpc, pipe_error, AppDescriptor, CatalogsDescriptor, PipeDescriptor, PipeManager,
-    PipeOperation, PipeState, RepositoryManager, Result,
+    pipe_error, AppDescriptor, CatalogsDescriptor, EnvironmentVariable, PipeDescriptor,
+    PipeManager, PipeOperation, PipeState, RepositoryManager, Result,
 };
 use std::path::PathBuf;
 
@@ -15,6 +15,7 @@ pub struct Descriptor {
     pub description: Option<String>,
     pub user: Option<String>,
     pub group: Option<String>,
+    pub envs: Vec<EnvironmentVariable>,
     pub app_descriptor: AppDescriptor,
     pub catalogs_descriptor: CatalogsDescriptor,
 }
@@ -30,6 +31,7 @@ pub struct DescriptorBuilder {
     pub description: Option<String>,
     pub user: Option<String>,
     pub group: Option<String>,
+    pub envs: Vec<EnvironmentVariable>,
     pub app_descriptor: Option<AppDescriptor>,
     pub catalogs_descriptor: Option<CatalogsDescriptor>,
 }
@@ -41,6 +43,7 @@ impl DescriptorBuilder {
             description: None,
             user: None,
             group: None,
+            envs: vec![],
             app_descriptor: None,
             catalogs_descriptor: None,
         }
@@ -66,6 +69,11 @@ impl DescriptorBuilder {
         self
     }
 
+    pub fn env(mut self, key: String, value: String) -> Self {
+        self.envs.push(EnvironmentVariable { key, value });
+        self
+    }
+
     pub fn app_descriptor(mut self, desc: AppDescriptor) -> Self {
         self.app_descriptor = Some(desc);
         self
@@ -81,6 +89,7 @@ impl DescriptorBuilder {
         let description = self.description;
         let user = self.user;
         let group = self.group;
+        let envs = self.envs;
         let app_descriptor = self.app_descriptor.expect("app descriptor undefined");
         let catalogs_descriptor = self
             .catalogs_descriptor
@@ -90,6 +99,7 @@ impl DescriptorBuilder {
             description,
             user,
             group,
+            envs,
             app_descriptor,
             catalogs_descriptor,
         }
@@ -137,7 +147,7 @@ impl Daemon {
     }
 
     // pipe operations
-    pub fn create_pipe(&self, desc: &Descriptor) -> Result<()> {
+    pub fn create_pipe(&self, desc: Descriptor) -> Result<()> {
         let app_descriptor = &desc.app_descriptor;
         let app_path = match self.check_app_registered(app_descriptor)? {
             Some(path) => path,
@@ -158,20 +168,23 @@ impl Daemon {
                 ))
             }
         };
-        let builder = PipeDescriptor::builder()
-            .id(desc.id.as_str())
+        let mut builder = PipeDescriptor::builder()
+            .id(desc.id)
             .app_path(app_path.as_path())
             .catalogs_path(catalogs_path.as_path());
-        let builder = match desc.description.as_ref() {
-            Some(description) => builder.description(description.as_str()),
+        for env in desc.envs {
+            builder = builder.env(env);
+        }
+        let builder = match desc.description {
+            Some(description) => builder.description(description),
             None => builder,
         };
-        let builder = match desc.user.as_ref() {
-            Some(user) => builder.user(user.as_str()),
+        let builder = match desc.user {
+            Some(user) => builder.user(user),
             None => builder,
         };
-        let builder = match desc.group.as_ref() {
-            Some(group) => builder.group(group.as_str()),
+        let builder = match desc.group {
+            Some(group) => builder.group(group),
             None => builder,
         };
         let pipe_descriptor = builder.build();
@@ -208,14 +221,3 @@ impl Daemon {
         Ok(pipe_states)
     }
 }
-
-pub struct DaemonService {
-    daemon: Daemon,
-}
-
-/*
-#[tonic::async_trait]
-impl grpc::daemon::daemon_server::Daemon for DaemonService {
-
-}
-*/

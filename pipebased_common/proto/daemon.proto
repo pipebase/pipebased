@@ -28,7 +28,7 @@ message CatalogsDescriptor {
 message ListCatalogsRequest {}
 
 message ListCatalogsResponse {
-    repeated CatalogsDescriptor catalogs = 1;
+    repeated CatalogsDescriptor catalogss = 1;
 }
 
 message PullAppRequest {
@@ -75,13 +75,19 @@ message RemoveCatalogsRequest {
 
 message RemoveCatalogsResponse {}
 
+message EnvironmentVariable {
+    string key = 1;
+    string value = 2;
+}
+
 message CreatePipeRequest {
     string id = 1;
     optional string description = 2;
     optional string user = 3;
     optional string group = 4;
-    AppDescriptor app = 5;
-    CatalogsDescriptor catalogs = 6;
+    repeated EnvironmentVariable envs = 5;
+    AppDescriptor app = 6;
+    CatalogsDescriptor catalogs = 7;
 }
 
 message CreatePipeResponse {}
