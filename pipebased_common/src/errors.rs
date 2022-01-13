@@ -99,8 +99,8 @@ impl From<systemd_client::Error> for Error {
     }
 }
 
-impl From<dbus::Error> for Error {
-    fn from(origin: dbus::Error) -> Self {
+impl From<zbus::Error> for Error {
+    fn from(origin: zbus::Error) -> Self {
         let error: systemd_client::Error = origin.into();
         Error(Box::new(ErrorImpl::Systemd(error)))
     }

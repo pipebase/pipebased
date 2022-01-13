@@ -11,11 +11,9 @@ use std::{
     path::{Path, PathBuf},
 };
 use systemd_client::{
-    build_blocking_client, create_unit_configuration_file, delete_unit_configuration_file,
-    manager::blocking::OrgFreedesktopSystemd1Manager, models::IntoModel,
-    unit::blocking::UnitProperties, ServiceConfiguration, ServiceUnitConfiguration,
-    SystemdObjectType, UnitActiveStateType, UnitConfiguration, UnitLoadStateType, UnitProps,
-    UnitSubStateType,
+    create_unit_configuration_file, delete_unit_configuration_file, manager, unit,
+    ServiceConfiguration, ServiceUnitConfiguration, UnitActiveStateType, UnitConfiguration,
+    UnitLoadStateType, UnitProps, UnitSubStateType,
 };
 use tracing::warn;
 
@@ -441,8 +439,8 @@ impl PipeManager {
             ));
         }
         let unit_name = PipeUnitNameBuilder::default().id(id).build();
-        let client = build_blocking_client(SystemdObjectType::Manager)?;
-        let _ = client.start_unit(unit_name.as_str(), SYSTEMD_DEFAULT_START_UNIT_MODE)?;
+        let proxy = manager::build_blocking_proxy()?;
+        let _ = proxy.start_unit(unit_name.as_str(), SYSTEMD_DEFAULT_START_UNIT_MODE)?;
         Ok(())
     }
 
@@ -457,7 +455,7 @@ impl PipeManager {
             ));
         }
         let unit_name = PipeUnitNameBuilder::default().id(id).build();
-        let client = build_blocking_client(SystemdObjectType::Manager)?;
+        let client = manager::build_blocking_proxy()?;
         let _ = client.stop_unit(unit_name.as_str(), SYSTEMD_DEFAULT_STOP_UNIT_MODE)?;
         Ok(())
     }
@@ -585,16 +583,15 @@ impl PipeManager {
         Ok(())
     }
 
-    fn do_get_unit(unit_name: &str) -> Result<dbus::Path> {
-        let client = build_blocking_client(SystemdObjectType::Manager)?;
-        let unit_path = client.get_unit(unit_name)?;
+    fn do_get_unit(unit_name: &str) -> Result<zvariant::OwnedObjectPath> {
+        let proxy = manager::build_blocking_proxy()?;
+        let unit_path = proxy.get_unit(unit_name)?;
         Ok(unit_path)
     }
 
-    fn do_get_unit_properties(unit_path: dbus::Path) -> Result<UnitProps> {
-        let client = build_blocking_client(SystemdObjectType::Unit(unit_path))?;
-        let unit_props = client.get_unit_properties()?;
-        let unit_props: UnitProps = unit_props.into_model()?;
+    fn do_get_unit_properties(unit_path: zvariant::OwnedObjectPath) -> Result<UnitProps> {
+        let client = unit::build_blocking_proxy(unit_path)?;
+        let unit_props = client.get_properties()?;
         Ok(unit_props)
     }
 
