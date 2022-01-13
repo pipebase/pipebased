@@ -1,7 +1,9 @@
 use crate::{PipeOperation, ResourceType};
 use std::{
+    env,
     ffi::OsStr,
     fmt::{Debug, Display},
+    net,
     path::Path,
     result,
 };
@@ -20,6 +22,8 @@ pub type Result<T> = result::Result<T, Error>;
 
 #[derive(Debug, Error)]
 pub enum ErrorImpl {
+    #[error("addr parse error, detail: {0:?}")]
+    AddrParse(#[from] net::AddrParseError),
     #[error("chmod error, permission: {permission:?}, path: {path:?}, detail: {message:?}")]
     Chmod {
         permission: String,
@@ -33,6 +37,8 @@ pub enum ErrorImpl {
         path: String,
         message: String,
     },
+    #[error("env error, detail: {0:?}")]
+    Env(#[from] env::VarError),
     #[error("io error, detail: {0:?}")]
     Io(#[from] std::io::Error),
     #[error("link error, from: {from:?}, to: {to:?}, detail: {message:?}")]
@@ -61,6 +67,18 @@ pub enum ErrorImpl {
     Utf8(#[from] std::string::FromUtf8Error),
     #[error("yaml error, detail: {0:?}")]
     Yaml(#[from] serde_yaml::Error),
+}
+
+impl From<net::AddrParseError> for Error {
+    fn from(err: net::AddrParseError) -> Self {
+        Error(Box::new(ErrorImpl::AddrParse(err)))
+    }
+}
+
+impl From<env::VarError> for Error {
+    fn from(err: env::VarError) -> Self {
+        Error(Box::new(ErrorImpl::Env(err)))
+    }
 }
 
 impl From<std::io::Error> for Error {

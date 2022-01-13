@@ -1,8 +1,40 @@
 use pipebased_common::{grpc, AppDescriptor, CatalogsDescriptor, Daemon, Descriptor};
 use tracing::{error, info};
 
+pub struct DaemonServiceBuilder {
+    pub daemon: Option<Daemon>,
+}
+
+impl Default for DaemonServiceBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl DaemonServiceBuilder {
+    pub fn new() -> Self {
+        DaemonServiceBuilder { daemon: None }
+    }
+
+    pub fn daemon(mut self, daemon: Daemon) -> Self {
+        self.daemon = Some(daemon);
+        self
+    }
+
+    pub fn build(self) -> DaemonService {
+        let daemon = self.daemon.expect("daemon undefined");
+        DaemonService { daemon }
+    }
+}
+
 pub struct DaemonService {
     daemon: Daemon,
+}
+
+impl DaemonService {
+    pub fn builder() -> DaemonServiceBuilder {
+        DaemonServiceBuilder::default()
+    }
 }
 
 #[tonic::async_trait]
