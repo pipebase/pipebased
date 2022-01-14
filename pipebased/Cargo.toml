@@ -19,3 +19,8 @@ path = "src/cli/main.rs"
 
 [dependencies]
 pipebased_common = { version = "0.1.0", path = "../pipebased_common" }
+serde = { version = "1.0", features = ["derive"] }
+tonic = "0.6"
+tokio = { version = "1.11.0", features = ["macros"] }
+tracing = "0.1"
+tracing-subscriber = "0.2"
