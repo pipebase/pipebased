@@ -11,7 +11,7 @@ use std::net::SocketAddr;
 use tonic::transport::Server;
 use tracing::{info, instrument};
 
-const ENV_PIPEBASED_CONFIG_FILE: &str = "ENV_PIPEBASED_CONFIG_FILE";
+const ENV_PIPEBASED_CONFIG_FILE: &str = "PIPEBASED_CONFIG_FILE";
 
 #[tokio::main]
 #[instrument]

@@ -1,0 +1,4 @@
+address: 127.0.0.1:16000
+repository:
+  app: e2e/data/mock/app
+  catalogs: e2e/data/mock/catalogs
