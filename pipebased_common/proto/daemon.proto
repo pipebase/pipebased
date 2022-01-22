@@ -104,11 +104,11 @@ message StopPipeRequest {
 
 message StopPipeResponse {}
 
-message DeletePipeRequest {
+message RemovePipeRequest {
     string id = 1;
 }
 
-message DeletePipeResponse {}
+message RemovePipeResponse {}
 
 message ListPipeRequest {}
 
@@ -135,6 +135,6 @@ service Daemon {
     rpc CreatePipe(CreatePipeRequest) returns (CreatePipeResponse) {}
     rpc StartPipe(StartPipeRequest) returns (StartPipeResponse) {}
     rpc StopPipe(StopPipeRequest) returns (StopPipeResponse) {}
-    rpc DeletePipe(DeletePipeRequest) returns (DeletePipeResponse) {}
+    rpc RemovePipe(RemovePipeRequest) returns (RemovePipeResponse) {}
     rpc ListPipe(ListPipeRequest) returns (ListPipeResponse) {}
 }

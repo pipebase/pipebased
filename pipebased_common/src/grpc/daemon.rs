@@ -133,12 +133,12 @@ pub struct StopPipeRequest {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct StopPipeResponse {}
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct DeletePipeRequest {
+pub struct RemovePipeRequest {
     #[prost(string, tag = "1")]
     pub id: ::prost::alloc::string::String,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct DeletePipeResponse {}
+pub struct RemovePipeResponse {}
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ListPipeRequest {}
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -345,10 +345,10 @@ pub mod daemon_client {
             let path = http::uri::PathAndQuery::from_static("/daemon.Daemon/StopPipe");
             self.inner.unary(request.into_request(), path, codec).await
         }
-        pub async fn delete_pipe(
+        pub async fn remove_pipe(
             &mut self,
-            request: impl tonic::IntoRequest<super::DeletePipeRequest>,
-        ) -> Result<tonic::Response<super::DeletePipeResponse>, tonic::Status> {
+            request: impl tonic::IntoRequest<super::RemovePipeRequest>,
+        ) -> Result<tonic::Response<super::RemovePipeResponse>, tonic::Status> {
             self.inner.ready().await.map_err(|e| {
                 tonic::Status::new(
                     tonic::Code::Unknown,
@@ -356,7 +356,7 @@ pub mod daemon_client {
                 )
             })?;
             let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static("/daemon.Daemon/DeletePipe");
+            let path = http::uri::PathAndQuery::from_static("/daemon.Daemon/RemovePipe");
             self.inner.unary(request.into_request(), path, codec).await
         }
         pub async fn list_pipe(
@@ -420,10 +420,10 @@ pub mod daemon_server {
             &self,
             request: tonic::Request<super::StopPipeRequest>,
         ) -> Result<tonic::Response<super::StopPipeResponse>, tonic::Status>;
-        async fn delete_pipe(
+        async fn remove_pipe(
             &self,
-            request: tonic::Request<super::DeletePipeRequest>,
-        ) -> Result<tonic::Response<super::DeletePipeResponse>, tonic::Status>;
+            request: tonic::Request<super::RemovePipeRequest>,
+        ) -> Result<tonic::Response<super::RemovePipeResponse>, tonic::Status>;
         async fn list_pipe(
             &self,
             request: tonic::Request<super::ListPipeRequest>,
@@ -747,18 +747,18 @@ pub mod daemon_server {
                     };
                     Box::pin(fut)
                 }
-                "/daemon.Daemon/DeletePipe" => {
+                "/daemon.Daemon/RemovePipe" => {
                     #[allow(non_camel_case_types)]
-                    struct DeletePipeSvc<T: Daemon>(pub Arc<T>);
-                    impl<T: Daemon> tonic::server::UnaryService<super::DeletePipeRequest> for DeletePipeSvc<T> {
-                        type Response = super::DeletePipeResponse;
+                    struct RemovePipeSvc<T: Daemon>(pub Arc<T>);
+                    impl<T: Daemon> tonic::server::UnaryService<super::RemovePipeRequest> for RemovePipeSvc<T> {
+                        type Response = super::RemovePipeResponse;
                         type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
                         fn call(
                             &mut self,
-                            request: tonic::Request<super::DeletePipeRequest>,
+                            request: tonic::Request<super::RemovePipeRequest>,
                         ) -> Self::Future {
                             let inner = self.0.clone();
-                            let fut = async move { (*inner).delete_pipe(request).await };
+                            let fut = async move { (*inner).remove_pipe(request).await };
                             Box::pin(fut)
                         }
                     }
@@ -767,7 +767,7 @@ pub mod daemon_server {
                     let inner = self.inner.clone();
                     let fut = async move {
                         let inner = inner.0;
-                        let method = DeletePipeSvc(inner);
+                        let method = RemovePipeSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
                         let mut grpc = tonic::server::Grpc::new(codec).apply_compression_config(
                             accept_compression_encodings,

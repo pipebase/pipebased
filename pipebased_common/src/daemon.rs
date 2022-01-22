@@ -252,8 +252,8 @@ impl Daemon {
         self.pipe_manager.stop(id)
     }
 
-    pub fn delete_pipe(&self, id: &str) -> Result<()> {
-        self.pipe_manager.delete(id)
+    pub fn remove_pipe(&self, id: &str) -> Result<()> {
+        self.pipe_manager.remove(id)
     }
 
     pub fn pipe_status(&self, id: &str) -> Result<PipeState> {

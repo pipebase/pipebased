@@ -25,7 +25,7 @@ pub enum PipeOperation {
     Start,
     Status,
     Stop,
-    Delete,
+    Remove,
 }
 
 impl Display for PipeOperation {
@@ -37,7 +37,7 @@ impl Display for PipeOperation {
             PipeOperation::Start => "start",
             PipeOperation::Status => "status",
             PipeOperation::Stop => "stop",
-            PipeOperation::Delete => "delete",
+            PipeOperation::Remove => "delete",
         };
         write!(f, "{}", op)
     }
@@ -482,7 +482,7 @@ impl PipeManager {
     }
 
     // delete service configuration file and remove pipe id from register
-    pub(crate) fn delete(&self, id: &str) -> Result<()> {
+    pub(crate) fn remove(&self, id: &str) -> Result<()> {
         let mut lock_file = self.open_pipe_lock()?;
         lock_file.lock()?;
         let registered = self.do_check_pipe_registered(id)?;
@@ -494,13 +494,13 @@ impl PipeManager {
         // before pipe deletion, the process should be stopped first
         if !state.is_inactive() {
             return Err(pipe_error(
-                PipeOperation::Delete,
+                PipeOperation::Remove,
                 format!("pipe '{}' is not inactive", id),
             ));
         }
         if !state.is_dead() {
             return Err(pipe_error(
-                PipeOperation::Delete,
+                PipeOperation::Remove,
                 format!("pipe '{}' is not dead", id),
             ));
         }
