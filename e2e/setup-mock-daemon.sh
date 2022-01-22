@@ -70,7 +70,7 @@ function run_mock() {
 }
 
 function run_daemon() {
-	RUST_LOG=info PIPEBUILDER_LOG_FORMATTER=full PIPEBASED_CONFIG_FILE=e2e/resources/piped.yml piped &
+	RUST_LOG=info PIPEBASED_LOG_FORMATTER=full PIPEBASED_CONFIG_FILE=${daemon} piped &
 }
 
 function run_all() {
