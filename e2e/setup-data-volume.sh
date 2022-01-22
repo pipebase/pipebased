@@ -103,7 +103,7 @@ function setup() {
 }
 
 function cleanup() {
-    rm -f ${data_directory}
+    rm -rf ${data_directory}
 }
 
 # Entrypoint of data volume setup script
