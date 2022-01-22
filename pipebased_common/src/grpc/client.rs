@@ -47,7 +47,7 @@ impl<'a> DaemonClientBuilder<'a> {
         self
     }
 
-    pub async fn connect(self) -> Result<DaemonClient<Channel>> {
+    pub async fn build(self) -> Result<DaemonClient<Channel>> {
         let client = DaemonClient::connect(format!(
             "{}://{}",
             self.protocol.expect("protocol undefined"),

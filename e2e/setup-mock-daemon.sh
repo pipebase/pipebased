@@ -69,9 +69,15 @@ function run_mock() {
     RUST_LOG=info PIPEBUILDER_CONFIG_FILE=${mock} mock &
 }
 
+function run_daemon() {
+	RUST_LOG=info PIPEBUILDER_LOG_FORMATTER=full PIPEBASED_CONFIG_FILE=e2e/resources/piped.yml piped &
+}
+
 function run_all() {
     run_mock
-    # sleep ${sleep_period}
+    sleep ${sleep_period}
+	run_daemon
+	sleep ${sleep_period}
 }
 
 # Entrypoint to setup daemon and pipebuilder mock server
