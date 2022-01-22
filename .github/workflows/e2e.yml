@@ -28,7 +28,7 @@ jobs:
       - name: setup data volume
         run: ./e2e/setup-data-volume.sh -r /tmp/repository
       - name: run pipebuilder mock server and daemon at background
-        run: sudo ./e2e/setup-mock-daemon.sh
+        run: sudo env "PATH=$PATH" ./e2e/setup-mock-daemon.sh
       - uses: actions-rs/cargo@v1
         with:
           command: test
