@@ -10,7 +10,7 @@ setup local data volume
 ```
 build daemon
 ```sh
-cargo build -p pipebased -r
+cargo build --package pipebased --release
 ```
 run pipebuilder mock server
 ```sh
@@ -20,7 +20,7 @@ RUST_LOG=info PIPEBUILDER_LOG_FORMATTER=full PIPEBUILDER_CONFIG_FILE=e2e/resourc
 run daemon
 ```sh
 # at project root
-RUST_LOG=info PIPEBUILDER_LOG_FORMATTER=full PIPEBASED_CONFIG_FILE=e2e/resources/piped.yml 
+sudo RUST_LOG=info PIPEBASED_LOG_FORMATTER=full PIPEBASED_CONFIG_FILE=e2e/resources/piped.yml ./target/release/piped
 ```
 
 ## Test Sample App
