@@ -5,6 +5,7 @@ use crate::{
 };
 use serde::Deserialize;
 use std::path::PathBuf;
+use tracing::warn;
 
 #[derive(Deserialize)]
 pub struct DaemonConfig {
@@ -268,7 +269,16 @@ impl Daemon {
         let pipe_ids = self.list_pipe_register()?;
         let mut pipe_states: Vec<PipeState> = vec![];
         for pipe_id in pipe_ids.iter() {
-            let pipe_state = self.pipe_status(pipe_id.as_str())?;
+            let pipe_state = match self.pipe_status(pipe_id.as_str()) {
+                Ok(pipe_state) => pipe_state,
+                Err(err) => {
+                    warn!(
+                        pipe_id = pipe_id.as_str(),
+                        "get pipe status failed, error: {:#?}", err
+                    );
+                    continue;
+                }
+            };
             pipe_states.push(pipe_state);
         }
         Ok(pipe_states)
