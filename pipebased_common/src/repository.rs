@@ -11,6 +11,7 @@ use pipebuilder_common::api::{
 use serde::{Deserialize, Serialize};
 use std::{
     fmt::Display,
+    fs::canonicalize,
     path::{Path, PathBuf},
 };
 use tracing::warn;
@@ -281,9 +282,12 @@ impl RepositoryManagerBuilder {
 
     pub fn build(self) -> RepositoryManager {
         let app_directory = self.app_directory.expect("app directory undefined");
+        let app_directory = canonicalize(app_directory).expect("canonicalize app directory failed");
         let catalogs_directory = self
             .catalogs_directory
             .expect("catalogs directory undefined");
+        let catalogs_directory =
+            canonicalize(catalogs_directory).expect("canonicalize catalogs directory failed");
         let pb_client = self.pb_client.expect("pb client undefined");
         RepositoryManager {
             app_directory,

@@ -8,6 +8,7 @@ use fslock::LockFile;
 use serde::Deserialize;
 use std::{
     fmt::Display,
+    fs::canonicalize,
     path::{Path, PathBuf},
 };
 use systemd_client::{
@@ -386,6 +387,7 @@ impl PipeManagerBuilder {
 
     pub fn build(self) -> PipeManager {
         let workspace = self.workspace.expect("workspace undefined");
+        let workspace = canonicalize(workspace).expect("canonicalize workspace failed");
         PipeManager { workspace }
     }
 }
