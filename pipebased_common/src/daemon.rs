@@ -207,7 +207,7 @@ impl Daemon {
             Some(path) => path,
             None => {
                 return Err(pipe_error(
-                    PipeOperation::Create,
+                    PipeOperation::Init,
                     format!("app {} not found", app_descriptor),
                 ))
             }
@@ -217,7 +217,7 @@ impl Daemon {
             Some(path) => path,
             None => {
                 return Err(pipe_error(
-                    PipeOperation::Create,
+                    PipeOperation::Init,
                     format!("catalogs {} not found", catalogs_descriptor),
                 ))
             }
@@ -242,7 +242,8 @@ impl Daemon {
             None => builder,
         };
         let pipe_descriptor = builder.build();
-        self.pipe_manager.create(pipe_descriptor)
+        self.pipe_manager.init(&pipe_descriptor)?;
+        self.pipe_manager.load(pipe_descriptor.id.as_str())
     }
 
     pub fn start_pipe(&self, id: &str) -> Result<()> {

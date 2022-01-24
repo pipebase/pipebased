@@ -20,8 +20,9 @@ use tracing::warn;
 
 #[derive(Debug)]
 pub enum PipeOperation {
-    Create,
     Deregister,
+    Init,
+    Load,
     Register,
     Start,
     Status,
@@ -32,8 +33,9 @@ pub enum PipeOperation {
 impl Display for PipeOperation {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let op = match self {
-            PipeOperation::Create => "create",
             PipeOperation::Deregister => "deregister",
+            PipeOperation::Init => "init",
+            PipeOperation::Load => "load",
             PipeOperation::Register => "register",
             PipeOperation::Start => "start",
             PipeOperation::Status => "status",
@@ -397,22 +399,22 @@ impl PipeManager {
         PipeManagerBuilder::default()
     }
 
-    // create service configuration file and add pipe id into register
-    pub(crate) fn create(&self, desc: PipeDescriptor<'_>) -> Result<()> {
+    // init service configuration file and add pipe id into register
+    pub(crate) fn init(&self, desc: &PipeDescriptor<'_>) -> Result<()> {
         let mut lock_file = self.open_pipe_lock()?;
         lock_file.lock()?;
         let id = desc.id.as_str();
         let registered = self.do_check_pipe_registered(id)?;
         if registered {
             return Err(pipe_error(
-                PipeOperation::Create,
+                PipeOperation::Init,
                 format!("conflict pipe id '{}'", id),
             ));
         }
         let unit_name = PipeUnitNameBuilder::default().id(id).build();
         if Self::do_get_unit(unit_name.as_str()).is_ok() {
             return Err(pipe_error(
-                PipeOperation::Create,
+                PipeOperation::Init,
                 format!("invalid pipe unit name given id '{}'", id),
             ));
         }
@@ -426,8 +428,22 @@ impl PipeManager {
             working_directory.as_path(),
         )?;
         // create service configuration file
-        Self::do_create_pipe_configuration_file(&desc, working_directory.as_path())?;
+        Self::do_create_pipe_configuration_file(desc, working_directory.as_path())?;
         self.do_register_pipe(id)
+    }
+
+    pub(crate) fn load(&self, id: &str) -> Result<()> {
+        let mut lock_file = self.open_pipe_lock()?;
+        lock_file.lock()?;
+        let registered = self.do_check_pipe_registered(id)?;
+        if !registered {
+            return Err(pipe_error(
+                PipeOperation::Load,
+                format!("pipe '{}' not registered", id),
+            ));
+        }
+        let unit_name = PipeUnitNameBuilder::default().id(id).build();
+        Self::do_load_unit(unit_name.as_str())
     }
 
     pub(crate) fn start(&self, id: &str) -> Result<()> {
@@ -441,9 +457,7 @@ impl PipeManager {
             ));
         }
         let unit_name = PipeUnitNameBuilder::default().id(id).build();
-        let proxy = manager::build_blocking_proxy()?;
-        let _ = proxy.start_unit(unit_name.as_str(), SYSTEMD_DEFAULT_START_UNIT_MODE)?;
-        Ok(())
+        Self::do_start_unit(unit_name.as_str())
     }
 
     pub(crate) fn stop(&self, id: &str) -> Result<()> {
@@ -457,9 +471,7 @@ impl PipeManager {
             ));
         }
         let unit_name = PipeUnitNameBuilder::default().id(id).build();
-        let client = manager::build_blocking_proxy()?;
-        let _ = client.stop_unit(unit_name.as_str(), SYSTEMD_DEFAULT_STOP_UNIT_MODE)?;
-        Ok(())
+        Self::do_stop_unit(unit_name.as_str())
     }
 
     pub(crate) fn status(&self, id: &str) -> Result<PipeState> {
@@ -595,6 +607,24 @@ impl PipeManager {
         let client = unit::build_blocking_proxy(unit_path)?;
         let unit_props = client.get_properties()?;
         Ok(unit_props)
+    }
+
+    fn do_start_unit(unit_name: &str) -> Result<()> {
+        let proxy = manager::build_blocking_proxy()?;
+        let _ = proxy.start_unit(unit_name, SYSTEMD_DEFAULT_START_UNIT_MODE)?;
+        Ok(())
+    }
+
+    fn do_stop_unit(unit_name: &str) -> Result<()> {
+        let client = manager::build_blocking_proxy()?;
+        let _ = client.stop_unit(unit_name, SYSTEMD_DEFAULT_STOP_UNIT_MODE)?;
+        Ok(())
+    }
+
+    fn do_load_unit(unit_name: &str) -> Result<()> {
+        let client = manager::build_blocking_proxy()?;
+        let _ = client.load_unit(unit_name)?;
+        Ok(())
     }
 
     // read pipe register
