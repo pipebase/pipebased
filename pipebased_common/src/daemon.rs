@@ -242,8 +242,7 @@ impl Daemon {
             None => builder,
         };
         let pipe_descriptor = builder.build();
-        self.pipe_manager.init(&pipe_descriptor)?;
-        self.pipe_manager.load(pipe_descriptor.id.as_str())
+        self.pipe_manager.init(&pipe_descriptor)
     }
 
     pub fn start_pipe(&self, id: &str) -> Result<()> {

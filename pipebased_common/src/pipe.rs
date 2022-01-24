@@ -432,20 +432,6 @@ impl PipeManager {
         self.do_register_pipe(id)
     }
 
-    pub(crate) fn load(&self, id: &str) -> Result<()> {
-        let mut lock_file = self.open_pipe_lock()?;
-        lock_file.lock()?;
-        let registered = self.do_check_pipe_registered(id)?;
-        if !registered {
-            return Err(pipe_error(
-                PipeOperation::Load,
-                format!("pipe '{}' not registered", id),
-            ));
-        }
-        let unit_name = PipeUnitNameBuilder::default().id(id).build();
-        Self::do_load_unit(unit_name.as_str())
-    }
-
     pub(crate) fn start(&self, id: &str) -> Result<()> {
         let mut lock_file = self.open_pipe_lock()?;
         lock_file.lock()?;
@@ -485,7 +471,8 @@ impl PipeManager {
             ));
         }
         let unit_name = PipeUnitNameBuilder::default().id(id).build();
-        let unit_path = Self::do_get_unit(unit_name.as_str())?;
+        // https://unix.stackexchange.com/questions/615202/systemd-dbus-api-returns-service-not-loaded-for-disabled-services
+        let unit_path = Self::do_load_unit(unit_name.as_str())?;
         let unit_props = Self::do_get_unit_properties(unit_path)?;
         Ok(PipeState {
             id: id.to_owned(),
@@ -621,10 +608,10 @@ impl PipeManager {
         Ok(())
     }
 
-    fn do_load_unit(unit_name: &str) -> Result<()> {
+    fn do_load_unit(unit_name: &str) -> Result<zvariant::OwnedObjectPath> {
         let client = manager::build_blocking_proxy()?;
-        let _ = client.load_unit(unit_name)?;
-        Ok(())
+        let unit_path = client.load_unit(unit_name)?;
+        Ok(unit_path)
     }
 
     // read pipe register
