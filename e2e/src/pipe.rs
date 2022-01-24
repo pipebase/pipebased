@@ -1,4 +1,4 @@
-// #[cfg(feature = "itest")]
+#[cfg(feature = "itest")]
 #[cfg(test)]
 mod tests {
     use crate::utils::{build_client, wait};
@@ -20,22 +20,6 @@ mod tests {
     const TEST_ENV_FORMATTER_VALUE: &str = "json";
     const TEST_ENV_RUST_LOG_KEY: &str = "RUST_LOG";
     const TEST_ENV_RUST_LOG_VALUE: &str = "info";
-
-    #[tokio::test]
-    async fn test_pipe_status() {
-        let mut client = build_client(TEST_CLI_CONFIG_FILE_PATH)
-            .await
-            .expect("build client failed");
-        let resp = client
-            .list_pipe(ListPipeRequest {})
-            .await
-            .expect("list pipe failed")
-            .into_inner();
-        let pipes = resp.pipes;
-        assert_eq!(1, pipes.len());
-        let pipe = pipes.get(0).expect("pipe state not found");
-        println!("{:#?}", pipe);
-    }
 
     #[tokio::test]
     async fn test_pipe() {
@@ -61,12 +45,13 @@ mod tests {
             .await
             .expect("pull catalogs failed");
         // create pipe
+        println!("create pipe ...");
         client
             .create_pipe(build_create_test_pipe_request())
             .await
             .expect("create pipe failed");
         // wait for configuration loaded
-        wait(3000).await;
+        wait(1000).await;
         // check pipe status
         let resp = client
             .list_pipe(ListPipeRequest {})
@@ -76,8 +61,11 @@ mod tests {
         let pipes = resp.pipes;
         assert_eq!(1, pipes.len());
         let pipe = pipes.get(0).expect("pipe state not found");
-        println!("{:#?}", pipe);
+        assert_eq!("loaded", pipe.load_state.as_str());
+        assert_eq!("inactive", pipe.active_state.as_str());
+        assert_eq!("dead", pipe.sub_state.as_str());
         // start pipe
+        println!("start pipe ...");
         client
             .start_pipe(StartPipeRequest {
                 id: String::from(TEST_PIPE_ID),
@@ -85,7 +73,7 @@ mod tests {
             .await
             .expect("start pipe failed");
         // wait for service status change
-        wait(3000).await;
+        wait(1000).await;
         // check pipe status
         let resp = client
             .list_pipe(ListPipeRequest {})
@@ -95,9 +83,12 @@ mod tests {
         let pipes = resp.pipes;
         assert_eq!(1, pipes.len());
         let pipe = pipes.get(0).expect("pipe state not found");
-        println!("{:#?}", pipe);
-        // wait for 3 seconds, pipe is still running
+        assert_eq!("loaded", pipe.load_state.as_str());
+        assert_eq!("active", pipe.active_state.as_str());
+        assert_eq!("running", pipe.sub_state.as_str());
+        // wait for 5 seconds, pipe is still running, since we count down with 10s
         wait(5000).await;
+        println!("pipe status check ...");
         let resp = client
             .list_pipe(ListPipeRequest {})
             .await
@@ -106,8 +97,11 @@ mod tests {
         let pipes = resp.pipes;
         assert_eq!(1, pipes.len());
         let pipe = pipes.get(0).expect("pipe state not found");
-        println!("{:#?}", pipe);
+        assert_eq!("loaded", pipe.load_state.as_str());
+        assert_eq!("active", pipe.active_state.as_str());
+        assert_eq!("running", pipe.sub_state.as_str());
         // stop pipe
+        println!("stop pipe ...");
         client
             .stop_pipe(StopPipeRequest {
                 id: String::from(TEST_PIPE_ID),
@@ -123,8 +117,23 @@ mod tests {
         let pipes = resp.pipes;
         assert_eq!(1, pipes.len());
         let pipe = pipes.get(0).expect("pipe state not found");
-        println!("{:#?}", pipe);
+        assert_eq!("loaded", pipe.load_state.as_str());
+        assert_eq!("inactive", pipe.active_state.as_str());
+        assert_eq!("dead", pipe.sub_state.as_str());
         // remove pipe
+        println!("remove pipe ...");
+        client.remove_pipe(RemovePipeRequest {
+            id: String::from(TEST_PIPE_ID),
+        })
+        .await
+        .expect("remove pipe failed");
+        let resp = client
+            .list_pipe(ListPipeRequest {})
+            .await
+            .expect("list pipe failed")
+            .into_inner();
+        let pipes = resp.pipes;
+        assert_eq!(0, pipes.len());
     }
 
     fn build_app_descriptor(namespace: &str, id: &str, version: u64) -> AppDescriptor {

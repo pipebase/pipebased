@@ -24,6 +24,7 @@ where
         .await
 }
 
+#[allow(dead_code)]
 pub async fn wait(millis: u64) {
     sleep(Duration::from_millis(millis)).await;
 }
