@@ -1,7 +1,7 @@
 use crate::{
-    pipe_error, AppDescriptor, CatalogsDescriptor, EnvironmentVariable, PipeDescriptor,
-    PipeManager, PipeManagerConfig, PipeOperation, PipeState, RepositoryManager,
-    RepositoryManagerConfig, Result,
+    register_error, AppDescriptor, CatalogsDescriptor, EnvironmentVariable, PipeDescriptor,
+    PipeManager, PipeManagerConfig, PipeState, RepositoryManager, RepositoryManagerConfig,
+    ResourceType, Result,
 };
 use serde::Deserialize;
 use std::path::PathBuf;
@@ -206,8 +206,8 @@ impl Daemon {
         let app_path = match self.check_app_registered(app_descriptor)? {
             Some(path) => path,
             None => {
-                return Err(pipe_error(
-                    PipeOperation::Init,
+                return Err(register_error(
+                    ResourceType::App,
                     format!("app {} not found", app_descriptor),
                 ))
             }
@@ -216,8 +216,8 @@ impl Daemon {
         let catalogs_path = match self.check_catalogs_registered(catalogs_descriptor)? {
             Some(path) => path,
             None => {
-                return Err(pipe_error(
-                    PipeOperation::Init,
+                return Err(register_error(
+                    ResourceType::Catalogs,
                     format!("catalogs {} not found", catalogs_descriptor),
                 ))
             }
