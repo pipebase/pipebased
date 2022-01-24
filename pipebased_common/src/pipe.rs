@@ -1,8 +1,8 @@
 use crate::{
     chown, create_directory, grpc, link, open_lock_file, path_error, pipe_error, read_yml,
-    write_yml, PathBuilder, Result, PATH_CATALOGS, PATH_PIPE_LOCK, PATH_PIPE_REGISTER,
-    SYSTEMD_DEFAULT_DESCRIPTION, SYSTEMD_DEFAULT_GROUP, SYSTEMD_DEFAULT_START_UNIT_MODE,
-    SYSTEMD_DEFAULT_STOP_UNIT_MODE, SYSTEMD_DEFAULT_USER,
+    remove_directory, write_yml, PathBuilder, Result, PATH_CATALOGS, PATH_PIPE_LOCK,
+    PATH_PIPE_REGISTER, SYSTEMD_DEFAULT_DESCRIPTION, SYSTEMD_DEFAULT_GROUP,
+    SYSTEMD_DEFAULT_START_UNIT_MODE, SYSTEMD_DEFAULT_STOP_UNIT_MODE, SYSTEMD_DEFAULT_USER,
 };
 use fslock::LockFile;
 use serde::Deserialize;
@@ -470,16 +470,7 @@ impl PipeManager {
                 format!("pipe '{}' not registered", id),
             ));
         }
-        let unit_name = PipeUnitNameBuilder::default().id(id).build();
-        // https://unix.stackexchange.com/questions/615202/systemd-dbus-api-returns-service-not-loaded-for-disabled-services
-        let unit_path = Self::do_load_unit(unit_name.as_str())?;
-        let unit_props = Self::do_get_unit_properties(unit_path)?;
-        Ok(PipeState {
-            id: id.to_owned(),
-            load_state: unit_props.load_state.into(),
-            active_state: unit_props.active_state.into(),
-            sub_state: unit_props.sub_state.into(),
-        })
+        Self::do_status(id)
     }
 
     // delete service configuration file and remove pipe id from register
@@ -491,7 +482,7 @@ impl PipeManager {
             warn!("pipe '{}' not registered", id);
             return Ok(());
         }
-        let state = self.status(id)?;
+        let state = Self::do_status(id)?;
         // before pipe deletion, the process should be stopped first
         if !state.is_inactive() {
             return Err(pipe_error(
@@ -506,6 +497,7 @@ impl PipeManager {
             ));
         }
         Self::do_delete_pipe_configuration_file(id)?;
+        self.do_delete_working_directory(id)?;
         self.do_deregister_pipe(id)?;
         Ok(())
     }
@@ -523,6 +515,14 @@ impl PipeManager {
             .build();
         create_directory(working_directory.as_path())?;
         Ok(working_directory)
+    }
+
+    fn do_delete_working_directory(&self, id: &str) -> Result<()> {
+        let working_directory = PathBuilder::default()
+            .push(self.workspace.as_path())
+            .push(id)
+            .build();
+        remove_directory(working_directory.as_path())
     }
 
     fn do_link_catalogs(working_directory: &Path, catalogs_path: &Path) -> Result<()> {
@@ -612,6 +612,19 @@ impl PipeManager {
         let client = manager::build_blocking_proxy()?;
         let unit_path = client.load_unit(unit_name)?;
         Ok(unit_path)
+    }
+
+    fn do_status(id: &str) -> Result<PipeState> {
+        let unit_name = PipeUnitNameBuilder::default().id(id).build();
+        // https://unix.stackexchange.com/questions/615202/systemd-dbus-api-returns-service-not-loaded-for-disabled-services
+        let unit_path = Self::do_load_unit(unit_name.as_str())?;
+        let unit_props = Self::do_get_unit_properties(unit_path)?;
+        Ok(PipeState {
+            id: id.to_owned(),
+            load_state: unit_props.load_state.into(),
+            active_state: unit_props.active_state.into(),
+            sub_state: unit_props.sub_state.into(),
+        })
     }
 
     // read pipe register
