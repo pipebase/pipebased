@@ -6,6 +6,7 @@ use pipebased_common::{
     read_yml, Result,
 };
 use std::path::Path;
+use tokio::time::{sleep, Duration};
 use tonic::transport::Channel;
 
 #[allow(dead_code)]
@@ -21,4 +22,8 @@ where
         .address(address.as_str())
         .build()
         .await
+}
+
+pub async fn wait(millis: u64) {
+    sleep(Duration::from_millis(millis)).await;
 }

@@ -6,8 +6,6 @@ edition = "2021"
 [dependencies]
 pipebased_common = { version = "0.1.0", path = "../pipebased_common" }
 tonic = "0.6"
-
-[dev-dependencies]
 tokio = { version = "1.11.0" }
 
 [features]
