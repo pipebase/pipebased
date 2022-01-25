@@ -4,8 +4,13 @@ install pipebuilder mock server
 ```sh
 cargo install pipebuilder_mock --bin mock
 ```
-setup local data volume
+clone pre-built app repository
+```sh
+git clone https://github.com/pipebase/repository.git PATH/TO/REPOSITORY
 ```
+setup local data volume
+```sh
+# at project root
 ./e2e/setup-data-volume.sh -r PATH/TO/REPOSITORY
 ```
 build daemon
@@ -16,6 +21,11 @@ run pipebuilder mock server
 ```sh
 # at project root
 RUST_LOG=info PIPEBUILDER_LOG_FORMATTER=full PIPEBUILDER_CONFIG_FILE=e2e/resources/mock.yml mock
+```
+create default app user/group
+```sh
+sudo groupadd pipebase --gid 10000 && \
+    sudo useradd pipebase --uid 10000 --gid 10000
 ```
 run daemon
 ```sh
