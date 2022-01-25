@@ -1,10 +1,11 @@
 use crate::{
-    pipe_error, AppDescriptor, CatalogsDescriptor, EnvironmentVariable, PipeDescriptor,
-    PipeManager, PipeManagerConfig, PipeOperation, PipeState, RepositoryManager,
-    RepositoryManagerConfig, Result,
+    register_error, AppDescriptor, CatalogsDescriptor, EnvironmentVariable, PipeDescriptor,
+    PipeManager, PipeManagerConfig, PipeState, RepositoryManager, RepositoryManagerConfig,
+    ResourceType, Result,
 };
 use serde::Deserialize;
 use std::path::PathBuf;
+use tracing::warn;
 
 #[derive(Deserialize)]
 pub struct DaemonConfig {
@@ -205,8 +206,8 @@ impl Daemon {
         let app_path = match self.check_app_registered(app_descriptor)? {
             Some(path) => path,
             None => {
-                return Err(pipe_error(
-                    PipeOperation::Create,
+                return Err(register_error(
+                    ResourceType::App,
                     format!("app {} not found", app_descriptor),
                 ))
             }
@@ -215,8 +216,8 @@ impl Daemon {
         let catalogs_path = match self.check_catalogs_registered(catalogs_descriptor)? {
             Some(path) => path,
             None => {
-                return Err(pipe_error(
-                    PipeOperation::Create,
+                return Err(register_error(
+                    ResourceType::Catalogs,
                     format!("catalogs {} not found", catalogs_descriptor),
                 ))
             }
@@ -241,7 +242,7 @@ impl Daemon {
             None => builder,
         };
         let pipe_descriptor = builder.build();
-        self.pipe_manager.create(pipe_descriptor)
+        self.pipe_manager.init(&pipe_descriptor)
     }
 
     pub fn start_pipe(&self, id: &str) -> Result<()> {
@@ -252,8 +253,8 @@ impl Daemon {
         self.pipe_manager.stop(id)
     }
 
-    pub fn delete_pipe(&self, id: &str) -> Result<()> {
-        self.pipe_manager.delete(id)
+    pub fn remove_pipe(&self, id: &str) -> Result<()> {
+        self.pipe_manager.remove(id)
     }
 
     pub fn pipe_status(&self, id: &str) -> Result<PipeState> {
@@ -268,7 +269,16 @@ impl Daemon {
         let pipe_ids = self.list_pipe_register()?;
         let mut pipe_states: Vec<PipeState> = vec![];
         for pipe_id in pipe_ids.iter() {
-            let pipe_state = self.pipe_status(pipe_id.as_str())?;
+            let pipe_state = match self.pipe_status(pipe_id.as_str()) {
+                Ok(pipe_state) => pipe_state,
+                Err(err) => {
+                    warn!(
+                        pipe_id = pipe_id.as_str(),
+                        "get pipe status failed, error: {:#?}", err
+                    );
+                    continue;
+                }
+            };
             pipe_states.push(pipe_state);
         }
         Ok(pipe_states)

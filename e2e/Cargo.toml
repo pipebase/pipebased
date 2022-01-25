@@ -1,0 +1,12 @@
+[package]
+name = "e2e"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+pipebased_common = { version = "0.1.0", path = "../pipebased_common" }
+tonic = "0.6"
+tokio = { version = "1.11.0" }
+
+[features]
+itest = []

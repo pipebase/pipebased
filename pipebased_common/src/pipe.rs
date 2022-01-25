@@ -1,13 +1,14 @@
 use crate::{
     chown, create_directory, grpc, link, open_lock_file, path_error, pipe_error, read_yml,
-    write_yml, PathBuilder, Result, PATH_CATALOGS, PATH_PIPE_LOCK, PATH_PIPE_REGISTER,
-    SYSTEMD_DEFAULT_DESCRIPTION, SYSTEMD_DEFAULT_GROUP, SYSTEMD_DEFAULT_START_UNIT_MODE,
-    SYSTEMD_DEFAULT_STOP_UNIT_MODE, SYSTEMD_DEFAULT_USER,
+    remove_directory, write_yml, PathBuilder, Result, PATH_CATALOGS, PATH_PIPE_LOCK,
+    PATH_PIPE_REGISTER, SYSTEMD_DEFAULT_DESCRIPTION, SYSTEMD_DEFAULT_GROUP,
+    SYSTEMD_DEFAULT_START_UNIT_MODE, SYSTEMD_DEFAULT_STOP_UNIT_MODE, SYSTEMD_DEFAULT_USER,
 };
 use fslock::LockFile;
 use serde::Deserialize;
 use std::{
     fmt::Display,
+    fs::canonicalize,
     path::{Path, PathBuf},
 };
 use systemd_client::{
@@ -19,25 +20,27 @@ use tracing::warn;
 
 #[derive(Debug)]
 pub enum PipeOperation {
-    Create,
     Deregister,
+    Init,
+    Load,
     Register,
     Start,
     Status,
     Stop,
-    Delete,
+    Remove,
 }
 
 impl Display for PipeOperation {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let op = match self {
-            PipeOperation::Create => "create",
             PipeOperation::Deregister => "deregister",
+            PipeOperation::Init => "init",
+            PipeOperation::Load => "load",
             PipeOperation::Register => "register",
             PipeOperation::Start => "start",
             PipeOperation::Status => "status",
             PipeOperation::Stop => "stop",
-            PipeOperation::Delete => "delete",
+            PipeOperation::Remove => "delete",
         };
         write!(f, "{}", op)
     }
@@ -386,6 +389,7 @@ impl PipeManagerBuilder {
 
     pub fn build(self) -> PipeManager {
         let workspace = self.workspace.expect("workspace undefined");
+        let workspace = canonicalize(workspace).expect("canonicalize workspace failed");
         PipeManager { workspace }
     }
 }
@@ -395,22 +399,22 @@ impl PipeManager {
         PipeManagerBuilder::default()
     }
 
-    // create service configuration file and add pipe id into register
-    pub(crate) fn create(&self, desc: PipeDescriptor<'_>) -> Result<()> {
+    // init service configuration file and add pipe id into register
+    pub(crate) fn init(&self, desc: &PipeDescriptor<'_>) -> Result<()> {
         let mut lock_file = self.open_pipe_lock()?;
         lock_file.lock()?;
         let id = desc.id.as_str();
         let registered = self.do_check_pipe_registered(id)?;
         if registered {
             return Err(pipe_error(
-                PipeOperation::Create,
+                PipeOperation::Init,
                 format!("conflict pipe id '{}'", id),
             ));
         }
         let unit_name = PipeUnitNameBuilder::default().id(id).build();
         if Self::do_get_unit(unit_name.as_str()).is_ok() {
             return Err(pipe_error(
-                PipeOperation::Create,
+                PipeOperation::Init,
                 format!("invalid pipe unit name given id '{}'", id),
             ));
         }
@@ -424,7 +428,7 @@ impl PipeManager {
             working_directory.as_path(),
         )?;
         // create service configuration file
-        Self::do_create_pipe_configuration_file(&desc, working_directory.as_path())?;
+        Self::do_create_pipe_configuration_file(desc, working_directory.as_path())?;
         self.do_register_pipe(id)
     }
 
@@ -439,9 +443,7 @@ impl PipeManager {
             ));
         }
         let unit_name = PipeUnitNameBuilder::default().id(id).build();
-        let proxy = manager::build_blocking_proxy()?;
-        let _ = proxy.start_unit(unit_name.as_str(), SYSTEMD_DEFAULT_START_UNIT_MODE)?;
-        Ok(())
+        Self::do_start_unit(unit_name.as_str())
     }
 
     pub(crate) fn stop(&self, id: &str) -> Result<()> {
@@ -455,9 +457,7 @@ impl PipeManager {
             ));
         }
         let unit_name = PipeUnitNameBuilder::default().id(id).build();
-        let client = manager::build_blocking_proxy()?;
-        let _ = client.stop_unit(unit_name.as_str(), SYSTEMD_DEFAULT_STOP_UNIT_MODE)?;
-        Ok(())
+        Self::do_stop_unit(unit_name.as_str())
     }
 
     pub(crate) fn status(&self, id: &str) -> Result<PipeState> {
@@ -470,19 +470,11 @@ impl PipeManager {
                 format!("pipe '{}' not registered", id),
             ));
         }
-        let unit_name = PipeUnitNameBuilder::default().id(id).build();
-        let unit_path = Self::do_get_unit(unit_name.as_str())?;
-        let unit_props = Self::do_get_unit_properties(unit_path)?;
-        Ok(PipeState {
-            id: id.to_owned(),
-            load_state: unit_props.load_state.into(),
-            active_state: unit_props.active_state.into(),
-            sub_state: unit_props.sub_state.into(),
-        })
+        Self::do_status(id)
     }
 
     // delete service configuration file and remove pipe id from register
-    pub(crate) fn delete(&self, id: &str) -> Result<()> {
+    pub(crate) fn remove(&self, id: &str) -> Result<()> {
         let mut lock_file = self.open_pipe_lock()?;
         lock_file.lock()?;
         let registered = self.do_check_pipe_registered(id)?;
@@ -490,21 +482,22 @@ impl PipeManager {
             warn!("pipe '{}' not registered", id);
             return Ok(());
         }
-        let state = self.status(id)?;
+        let state = Self::do_status(id)?;
         // before pipe deletion, the process should be stopped first
         if !state.is_inactive() {
             return Err(pipe_error(
-                PipeOperation::Delete,
+                PipeOperation::Remove,
                 format!("pipe '{}' is not inactive", id),
             ));
         }
         if !state.is_dead() {
             return Err(pipe_error(
-                PipeOperation::Delete,
+                PipeOperation::Remove,
                 format!("pipe '{}' is not dead", id),
             ));
         }
         Self::do_delete_pipe_configuration_file(id)?;
+        self.do_delete_working_directory(id)?;
         self.do_deregister_pipe(id)?;
         Ok(())
     }
@@ -522,6 +515,14 @@ impl PipeManager {
             .build();
         create_directory(working_directory.as_path())?;
         Ok(working_directory)
+    }
+
+    fn do_delete_working_directory(&self, id: &str) -> Result<()> {
+        let working_directory = PathBuilder::default()
+            .push(self.workspace.as_path())
+            .push(id)
+            .build();
+        remove_directory(working_directory.as_path())
     }
 
     fn do_link_catalogs(working_directory: &Path, catalogs_path: &Path) -> Result<()> {
@@ -593,6 +594,37 @@ impl PipeManager {
         let client = unit::build_blocking_proxy(unit_path)?;
         let unit_props = client.get_properties()?;
         Ok(unit_props)
+    }
+
+    fn do_start_unit(unit_name: &str) -> Result<()> {
+        let proxy = manager::build_blocking_proxy()?;
+        let _ = proxy.start_unit(unit_name, SYSTEMD_DEFAULT_START_UNIT_MODE)?;
+        Ok(())
+    }
+
+    fn do_stop_unit(unit_name: &str) -> Result<()> {
+        let client = manager::build_blocking_proxy()?;
+        let _ = client.stop_unit(unit_name, SYSTEMD_DEFAULT_STOP_UNIT_MODE)?;
+        Ok(())
+    }
+
+    fn do_load_unit(unit_name: &str) -> Result<zvariant::OwnedObjectPath> {
+        let client = manager::build_blocking_proxy()?;
+        let unit_path = client.load_unit(unit_name)?;
+        Ok(unit_path)
+    }
+
+    fn do_status(id: &str) -> Result<PipeState> {
+        let unit_name = PipeUnitNameBuilder::default().id(id).build();
+        // https://unix.stackexchange.com/questions/615202/systemd-dbus-api-returns-service-not-loaded-for-disabled-services
+        let unit_path = Self::do_load_unit(unit_name.as_str())?;
+        let unit_props = Self::do_get_unit_properties(unit_path)?;
+        Ok(PipeState {
+            id: id.to_owned(),
+            load_state: unit_props.load_state.into(),
+            active_state: unit_props.active_state.into(),
+            sub_state: unit_props.sub_state.into(),
+        })
     }
 
     // read pipe register

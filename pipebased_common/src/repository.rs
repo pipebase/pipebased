@@ -11,6 +11,7 @@ use pipebuilder_common::api::{
 use serde::{Deserialize, Serialize};
 use std::{
     fmt::Display,
+    fs::canonicalize,
     path::{Path, PathBuf},
 };
 use tracing::warn;
@@ -281,9 +282,12 @@ impl RepositoryManagerBuilder {
 
     pub fn build(self) -> RepositoryManager {
         let app_directory = self.app_directory.expect("app directory undefined");
+        let app_directory = canonicalize(app_directory).expect("canonicalize app directory failed");
         let catalogs_directory = self
             .catalogs_directory
             .expect("catalogs directory undefined");
+        let catalogs_directory =
+            canonicalize(catalogs_directory).expect("canonicalize catalogs directory failed");
         let pb_client = self.pb_client.expect("pb client undefined");
         RepositoryManager {
             app_directory,
@@ -346,10 +350,11 @@ impl RepositoryManager {
         let path = self.do_check_app_registered(desc)?;
         if path.is_none() {
             warn!(
+                resource = "app",
                 namespace = desc.namespace.as_str(),
                 id = desc.id.as_str(),
                 version = desc.version,
-                "remove app not exists"
+                "remove resource not exists"
             );
             return Ok(());
         }
@@ -363,10 +368,11 @@ impl RepositoryManager {
         let path = self.do_check_catalogs_registered(desc)?;
         if path.is_none() {
             warn!(
+                resource = "catalogs",
                 namespace = desc.namespace.as_str(),
                 id = desc.id.as_str(),
                 version = desc.version,
-                "remove catalogs not exists"
+                "remove resource not exists"
             );
             return Ok(());
         }
@@ -459,7 +465,7 @@ impl RepositoryManager {
             "+r",
         )?;
         let path = PathBuilder::default()
-            .push(self.app_directory.as_path())
+            .push(self.catalogs_directory.as_path())
             .push(desc.namespace.as_str())
             .push(desc.id.as_str())
             .push(version.as_str())
@@ -547,7 +553,7 @@ impl RepositoryManager {
         assert!(i < len, "app descriptor {} not found in register", desc);
         apps.swap(i, len - 1);
         apps.remove(len - 1);
-        Ok(())
+        self.do_write_app_register(apps)
     }
 
     // read catalogs register
@@ -593,7 +599,7 @@ impl RepositoryManager {
         );
         catalogs.swap(i, len - 1);
         catalogs.remove(len - 1);
-        Ok(())
+        self.do_write_catalogs_register(catalogs)
     }
 
     // app exists at local repository
@@ -609,6 +615,7 @@ impl RepositoryManager {
         let exists_in_register = i < apps.len();
         let path = PathBuilder::default()
             .push(self.app_directory.as_path())
+            .push(desc.namespace.as_str())
             .push(desc.id.as_str())
             .push(desc.version.to_string())
             .push(PATH_APP)
@@ -616,6 +623,7 @@ impl RepositoryManager {
         let exists_path = path.as_path().exists();
         if exists_in_register != exists_path {
             warn!(
+                resource = "app",
                 namespace = desc.namespace.as_str(),
                 id = desc.id.as_str(),
                 version = desc.version,
@@ -643,6 +651,7 @@ impl RepositoryManager {
         let exists_in_register = i < catalogs.len();
         let path = PathBuilder::default()
             .push(self.catalogs_directory.as_path())
+            .push(desc.namespace.as_str())
             .push(desc.id.as_str())
             .push(desc.version.to_string())
             .push(PATH_CATALOGS)
@@ -650,6 +659,7 @@ impl RepositoryManager {
         let exists_path = path.as_path().exists();
         if exists_in_register != exists_path {
             warn!(
+                resource = "catalogs",
                 namespace = desc.namespace.as_str(),
                 id = desc.id.as_str(),
                 version = desc.version,

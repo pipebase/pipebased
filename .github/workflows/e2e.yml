@@ -1,0 +1,61 @@
+on: 
+  pull_request:
+  push:
+    branches:
+      - main
+  schedule:
+    - cron: "0 13 * * *"
+
+name: E2E
+
+jobs:
+  repository:
+    name: Daemon Repository Itest
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+      - name: install pipebuilder mock server
+        run: cargo install pipebuilder_mock --bin mock
+      - name: install daemon
+        run: cargo install --path pipebased --bin piped
+      - name: clone repository
+        run: git clone https://github.com/pipebase/repository.git /tmp/repository
+      - name: setup data volume
+        run: ./e2e/setup-data-volume.sh -r /tmp/repository
+      - name: run pipebuilder mock server and daemon at background
+        run: sudo env "PATH=$PATH" ./e2e/setup-mock-daemon.sh
+      - uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --package e2e --features itest repository::tests::test_repository
+  pipe:
+    name: Daemon Pipe Itest
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+      - name: install pipebuilder mock server
+        run: cargo install pipebuilder_mock --bin mock
+      - name: install daemon
+        run: cargo install --path pipebased --bin piped
+      - name: clone repository
+        run: git clone https://github.com/pipebase/repository.git /tmp/repository
+      - name: setup data volume
+        run: ./e2e/setup-data-volume.sh -r /tmp/repository
+      - name: setup group and user
+        run: sudo groupadd pipebase --gid 10000 && sudo useradd pipebase --uid 10000 --gid 10000
+      - name: run pipebuilder mock server and daemon at background
+        run: sudo env "PATH=$PATH" ./e2e/setup-mock-daemon.sh
+      - uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --package e2e --features itest pipe::tests::test_pipe

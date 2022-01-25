@@ -54,7 +54,12 @@ pub enum ErrorImpl {
         operation: PipeOperation,
         message: String,
     },
-    #[error("pull repository error, resource: {resource:?}, detail: {error:?}")]
+    #[error("register error, resource: {resource:?}, detail: {message:?}")]
+    Register {
+        resource: ResourceType,
+        message: String,
+    },
+    #[error("repository error, resource: {resource:?}, detail: {error:?}")]
     Resource {
         resource: ResourceType,
         error: pipebuilder_common::Error,
@@ -168,4 +173,8 @@ pub fn pipe_error(operation: PipeOperation, message: String) -> Error {
 
 pub fn resource_error(resource: ResourceType, error: pipebuilder_common::Error) -> Error {
     Error(Box::new(ErrorImpl::Resource { resource, error }))
+}
+
+pub fn register_error(resource: ResourceType, message: String) -> Error {
+    Error(Box::new(ErrorImpl::Register { resource, message }))
 }

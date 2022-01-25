@@ -273,15 +273,15 @@ impl grpc::daemon::daemon_server::Daemon for DaemonService {
         }
     }
 
-    async fn delete_pipe(
+    async fn remove_pipe(
         &self,
-        request: tonic::Request<grpc::daemon::DeletePipeRequest>,
-    ) -> Result<tonic::Response<grpc::daemon::DeletePipeResponse>, tonic::Status> {
+        request: tonic::Request<grpc::daemon::RemovePipeRequest>,
+    ) -> Result<tonic::Response<grpc::daemon::RemovePipeResponse>, tonic::Status> {
         let request = request.into_inner();
-        match self.daemon.delete_pipe(request.id.as_str()) {
-            Ok(_) => Ok(tonic::Response::new(grpc::daemon::DeletePipeResponse {})),
+        match self.daemon.remove_pipe(request.id.as_str()) {
+            Ok(_) => Ok(tonic::Response::new(grpc::daemon::RemovePipeResponse {})),
             Err(err) => Err(tonic::Status::invalid_argument(format!(
-                "delete pipe failed, error: {:#?}",
+                "remove pipe failed, error: {:#?}",
                 err
             ))),
         }

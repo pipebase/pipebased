@@ -1,0 +1,9 @@
+address: 127.0.0.1:10000
+daemon:
+  repository:
+    app_directory: e2e/data/daemon/app
+    catalogs_directory: e2e/data/daemon/catalogs
+    pb_client:
+      endpoint: http://127.0.0.1:16000
+  pipe:
+    workspace: e2e/data/daemon/workspace
