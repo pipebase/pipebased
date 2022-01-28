@@ -34,3 +34,52 @@ sudo RUST_LOG=info PIPEBASED_LOG_FORMATTER=full PIPEBASED_CONFIG_FILE=e2e/resour
 ```
 
 ## Test Sample App
+install cli
+```sh
+cargo install --path pipebased --bin pipe
+```
+pull app
+```sh
+pipe pulla -n dev -i timer -v 0
+```
+pull catalogs
+```sh
+pipe pullc -n dev -i timer -v 0
+```
+list app
+```sh
+pipe apps
+```
+list catalogs
+```sh
+pipe catalogs
+```
+create pipe
+```sh
+# at project root
+pipe create e2e/resources/pipe-compose.yml
+```
+start pipe
+```sh
+pipe start timer
+```
+check pipe runtime state
+```sh
+pipe ps
+```
+stop pipe
+```sh
+pipe stop timer
+```
+remove pipe
+```sh
+pipe rm timer
+```
+remove app
+```sh
+pipe rma -n dev -i timer -v 0
+```
+remove catalogs
+```sh
+pipe rmc -n dev -i timer -v 0
+```

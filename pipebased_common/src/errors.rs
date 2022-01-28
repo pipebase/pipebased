@@ -64,6 +64,8 @@ pub enum ErrorImpl {
         resource: ResourceType,
         error: pipebuilder_common::Error,
     },
+    #[error("rpc error, detail: {0:?}")]
+    Rpc(#[from] tonic::Status),
     #[error("systemd client error, detail: {0:?}")]
     Systemd(#[from] systemd_client::Error),
     #[error("tonic transport error, detail: {0:?}")]
@@ -120,6 +122,12 @@ impl From<serde_yaml::Error> for Error {
 impl From<tonic::transport::Error> for Error {
     fn from(err: tonic::transport::Error) -> Self {
         Error(Box::new(ErrorImpl::TonicTransport(err)))
+    }
+}
+
+impl From<tonic::Status> for Error {
+    fn from(err: tonic::Status) -> Self {
+        Error(Box::new(ErrorImpl::Rpc(err)))
     }
 }
 
