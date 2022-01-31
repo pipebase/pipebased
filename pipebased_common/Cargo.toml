@@ -6,6 +6,7 @@ authors = ["Li Yu <li.yu.sh0211@gmail.com>"]
 license = "Apache-2.0"
 repository = "https://github.com/pipebase/pipebased"
 homepage = "https://github.com/pipebase/pipebased"
+readme = "README.md"
 documentation = "https://docs.rs/pipebased_common/"
 description = "lib for pipebased components"
 keywords = ["pipebase", "daemon"]

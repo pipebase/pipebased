@@ -6,6 +6,7 @@ authors = ["Li Yu <li.yu.sh0211@gmail.com>"]
 license = "Apache-2.0"
 repository = "https://github.com/pipebase/pipebased"
 homepage = "https://github.com/pipebase/pipebased"
+readme = "../README.md"
 description = "runtime daemon for pipebase application"
 keywords = ["pipebase", "daemon"]
 
