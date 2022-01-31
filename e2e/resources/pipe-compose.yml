@@ -1,0 +1,15 @@
+id: timer
+description: pipebase timer app
+envs:
+  - key: RUST_LOG
+    value: info
+  - key: PIPEBASE_LOG_FORMATTER
+    value: full
+app:
+  namespace: dev
+  id: timer
+  version: 0
+catalogs:
+  namespace: dev
+  id: timer
+  version: 0

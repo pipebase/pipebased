@@ -18,8 +18,10 @@ name = "pipe"
 path = "src/cli/main.rs"
 
 [dependencies]
+clap = "3.0.13"
 pipebased_common = { version = "0.1.0", path = "../pipebased_common" }
 serde = { version = "1.0", features = ["derive"] }
+termcolor = "1.1"
 tonic = "0.6"
 tokio = { version = "1.11.0", features = ["macros"] }
 tracing = "0.1"

@@ -122,11 +122,12 @@ mod tests {
         assert_eq!("dead", pipe.sub_state.as_str());
         // remove pipe
         println!("remove pipe ...");
-        client.remove_pipe(RemovePipeRequest {
-            id: String::from(TEST_PIPE_ID),
-        })
-        .await
-        .expect("remove pipe failed");
+        client
+            .remove_pipe(RemovePipeRequest {
+                id: String::from(TEST_PIPE_ID),
+            })
+            .await
+            .expect("remove pipe failed");
         let resp = client
             .list_pipe(ListPipeRequest {})
             .await

@@ -30,6 +30,15 @@ impl RpcClientConfig {
     }
 }
 
+impl Default for RpcClientConfig {
+    fn default() -> Self {
+        RpcClientConfig {
+            protocol: RpcProtocolType::Http,
+            address: String::from("127.0.0.1:10000"),
+        }
+    }
+}
+
 #[derive(Default)]
 pub struct DaemonClientBuilder<'a> {
     pub protocol: Option<RpcProtocolType>,
